@@ -1,0 +1,13 @@
+{
+  "id": "dae2092e",
+  "name": "Protexium_Bot_allv1",
+  "description": "Kundenservice-Bot der auf Kundenanfragen reagiert",
+  "website_url": "https://protexium.de/",
+  "documents": [],
+  "created_at": "2025-07-14T02:17:27.947388",
+  "branding": {
+    "primary_color": "#1f3a93",
+    "secondary_color": "#34495e",
+    "welcome_message": "Hallo! Ich bin Protexium_Bot_allv1, dein persönlicher Assistent."
+  }
+}
