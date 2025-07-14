@@ -1,4 +1,4 @@
-# 🚀 PDF-to-Chatbot Platform
+# 🚀 PDF-to-Chatbot Platform (Autonomous Chatbot)
 
 Eine intelligente Platform zur automatischen Erstellung von KI-Chatbots aus PDFs und Websites mit modernster RAG-Technologie.
 
@@ -27,8 +27,8 @@ Eine intelligente Platform zur automatischen Erstellung von KI-Chatbots aus PDFs
 
 ### 1. Repository klonen
 ```bash
-git clone <repository-url>
-cd pdf-to-chatbot-platform
+git clone https://github.com/Philippstf/Autonomous_Chatbot.git
+cd Autonomous_Chatbot
 ```
 
 ### 2. Dependencies installieren
