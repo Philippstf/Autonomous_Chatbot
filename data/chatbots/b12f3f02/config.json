@@ -1,0 +1,26 @@
+{
+  "id": "b12f3f02",
+  "name": "Protexium_Bot_final",
+  "description": "alsdd",
+  "website_url": "https://protexium.de",
+  "documents": [
+    "Ausfertigungen Errichter.pdf",
+    "DE_fuer_Vermittler (1).pdf",
+    "machen Sie Ihr Haus zur Festung.pdf",
+    "PDF_AnhangFuerVermittler_TNF.pdf.pdf",
+    "Präsentation_Protexium.pdf"
+  ],
+  "created_at": "2025-07-14T03:51:31.584838",
+  "branding": {
+    "primary_color": "#1f3a93",
+    "secondary_color": "#2c75bf",
+    "accent_color": "#e74c3c",
+    "background_color": "#f8f9fa",
+    "text_color": "#2c3e50",
+    "font_family": "Roboto",
+    "font_size": "Normal",
+    "chat_width": "Normal (800px)",
+    "message_style": "Sprechblasen",
+    "company_name": "Protexium Security GmbH"
+  }
+}

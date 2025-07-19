@@ -70,12 +70,49 @@ class ChatbotFactory:
         except Exception as e:
             st.error(f"Fehler beim Speichern der Registry: {e}")
     
+    def _save_logo(self, chatbot_id: str, logo_file) -> Optional[str]:
+        """Speichert hochgeladenes Logo und gibt URL zurück"""
+        try:
+            # Erstelle Assets-Verzeichnis
+            assets_dir = self.chatbots_dir / chatbot_id / "assets"
+            assets_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Speichere Logo-Datei
+            logo_path = assets_dir / f"logo_{logo_file.name}"
+            with open(logo_path, "wb") as f:
+                f.write(logo_file.getbuffer())
+            
+            # Gebe relative URL zurück
+            return f"data/chatbots/{chatbot_id}/assets/logo_{logo_file.name}"
+            
+        except Exception as e:
+            print(f"Fehler beim Speichern des Logos: {e}")
+            return None
+    
+    def _sanitize_config_for_json(self, config: dict) -> dict:
+        """Entfernt nicht-JSON-serialisierbare Objekte aus der Konfiguration"""
+        import json
+        sanitized = {}
+        
+        for key, value in config.items():
+            try:
+                # Teste ob der Wert JSON-serialisierbar ist
+                json.dumps(value)
+                sanitized[key] = value
+            except (TypeError, ValueError):
+                # Überspringe nicht-serialisierbare Werte
+                print(f"Überspringe nicht-serialisierbaren Wert für '{key}': {type(value)}")
+                continue
+        
+        return sanitized
+    
     def create_chatbot(self, 
                       name: str, 
                       description: str,
                       website_url: Optional[str] = None,
                       uploaded_documents: Optional[List] = None,
                       branding: Optional[Dict] = None,
+                      extended_config: Optional[Dict] = None,
                       progress_callback=None) -> Optional[str]:
         """
         Erstellt einen neuen Chatbot
@@ -86,6 +123,7 @@ class ChatbotFactory:
             website_url: Optional URL für Website-Scraping
             uploaded_documents: Liste von hochgeladenen Dateien
             branding: Branding-Konfiguration
+            extended_config: Erweiterte Konfiguration (Email-Capture, Kontaktpersonen, etc.)
             progress_callback: Callback für Progress Updates
             
         Returns:
@@ -97,6 +135,28 @@ class ChatbotFactory:
             
             if progress_callback:
                 progress_callback("Initialisiere Chatbot...", 0.05)
+            
+            # Verarbeite Logo-Upload (falls vorhanden)
+            if progress_callback:
+                progress_callback("Verarbeite Logo-Upload...", 0.08)
+            
+            logo_url = None
+            if extended_config and 'uploaded_logo' in extended_config and extended_config['uploaded_logo'] is not None:
+                logo_url = self._save_logo(chatbot_id, extended_config['uploaded_logo'])
+            
+            # Merge erweiterte Konfiguration in Branding (ohne UploadedFile-Objekt)
+            if extended_config:
+                if branding is None:
+                    branding = {}
+                
+                # Kopiere extended_config und entferne nicht-serialisierbare Objekte
+                config_to_merge = self._sanitize_config_for_json(extended_config)
+                
+                branding.update(config_to_merge)
+                
+                # Füge Logo-URL hinzu falls vorhanden
+                if logo_url:
+                    branding['logo_url'] = logo_url
             
             # Erstelle Konfiguration
             config = ChatbotConfig(

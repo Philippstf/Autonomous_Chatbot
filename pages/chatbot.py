@@ -42,9 +42,10 @@ def setup_page_config():
     )
 
 def get_custom_css(config: ChatbotConfig) -> str:
-    """Generiert Custom CSS basierend auf Branding"""
+    """Generiert Custom CSS basierend auf erweiterter Branding-Konfiguration"""
     primary_color = config.branding.get("primary_color", "#1f3a93")
     secondary_color = config.branding.get("secondary_color", "#34495e")
+    accent_color = config.branding.get("accent_color", "#e74c3c")
     
     return f"""
     <style>
@@ -151,8 +152,8 @@ def get_base64_image(image_path):
     except:
         return ""
 
-def display_chat_message_with_sources(role: str, content: str, sources: List[Dict] = None, avatar_path: str = None):
-    """Zeigt Chat-Nachricht mit Quellenangaben"""
+def display_chat_message_with_sources(role: str, content: str, sources: List[Dict] = None, config: ChatbotConfig = None):
+    """Zeigt Chat-Nachricht mit Quellenangaben und Logo als Avatar"""
     if role == "user":
         st.markdown(f"""
         <div style="display: flex; justify-content: flex-end; margin: 10px 0; align-items: flex-end;">
@@ -167,18 +168,44 @@ def display_chat_message_with_sources(role: str, content: str, sources: List[Dic
         </div>
         """, unsafe_allow_html=True)
     else:
+        # Bot Avatar - verwende Logo falls vorhanden
         avatar_img = ""
-        if avatar_path:
-            avatar_img = f'<img src="data:image/png;base64,{get_base64_image(avatar_path)}" style="width: 30px; height: 30px; object-fit: contain;">'
+        logo_url = None
+        
+        if config and config.branding:
+            logo_url = config.branding.get('logo_url')
+        
+        if logo_url and Path(logo_url).exists():
+            # Verwende hochgeladenes Logo
+            try:
+                import base64
+                with open(logo_url, "rb") as img_file:
+                    logo_base64 = base64.b64encode(img_file.read()).decode()
+                    avatar_img = f'<img src="data:image/png;base64,{logo_base64}" style="width: 35px; height: 35px; object-fit: cover; border-radius: 50%;">'
+            except:
+                avatar_img = "🤖"
         else:
-            avatar_img = "🤖"
+            # Fallback: Auto-generierte Initialen oder Standard-Icon
+            if config:
+                company_name = config.branding.get('company_name', config.name)
+                initials = ''.join([word[0].upper() for word in company_name.split()[:2]])
+                primary_color = config.branding.get('primary_color', '#1f3a93')
+                avatar_img = f'<div style="font-size: 14px; font-weight: bold; color: white;">{initials}</div>'
+            else:
+                avatar_img = "🤖"
 
         sources_html = _render_sources(sources) if sources else ""
+        
+        # Verwende Primärfarbe für Avatar-Hintergrund
+        bg_color = "#1e1f26"
+        if config and config.branding:
+            bg_color = config.branding.get('primary_color', '#1e1f26')
+        
         st.markdown(f"""
         <div style="display: flex; justify-content: flex-start; margin: 10px 0; align-items: flex-start;">
-            <div style="width: 40px; height: 40px; background-color: #1e1f26; border-radius: 50%; 
+            <div style="width: 40px; height: 40px; background: {bg_color}; border-radius: 50%; 
                         display: flex; align-items: center; justify-content: center; 
-                        border: 1px solid #333; flex-shrink: 0; margin-right: 8px;">
+                        border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0; margin-right: 8px;">
                 {avatar_img}
             </div>
             <div>
@@ -253,6 +280,27 @@ Wenn Du die Antwort nicht findest, entschuldige Dich kurz und erkläre deine Gre
     
     return messages
 
+def load_extended_config(config: ChatbotConfig) -> dict:
+    """Lädt erweiterte Konfiguration aus den gespeicherten Branding-Daten"""
+    
+    if not config.branding:
+        return {}
+    
+    # Lade alle erweiterten Daten aus dem Branding-Feld
+    extended_config = {
+        'email_capture_enabled': config.branding.get('email_capture_enabled', False),
+        'email_capture_config': config.branding.get('email_capture_config', {}),
+        'contact_persons_enabled': config.branding.get('contact_persons_enabled', False),
+        'contact_persons': config.branding.get('contact_persons', []),
+        'contact_trigger_config': config.branding.get('contact_trigger_config', {}),
+        'company_info': config.branding.get('company_info', {}),
+        'business_hours': config.branding.get('business_hours', {}),
+        'behavior_settings': config.branding.get('behavior_settings', {}),
+        'logo_url': config.branding.get('logo_url')
+    }
+    
+    return extended_config
+
 def ask_chatbot(chatbot_id: str, question: str, conversation_id: str = None) -> tuple[str, List[Dict]]:
     """Stellt Frage an spezifischen Chatbot"""
     try:
@@ -297,6 +345,178 @@ def ask_chatbot(chatbot_id: str, question: str, conversation_id: str = None) -> 
     except Exception as e:
         return f"❌ Entschuldigung, ein Fehler ist aufgetreten: {str(e)}", []
 
+def render_company_header(config: ChatbotConfig):
+    """Rendert erweiterten Company Header mit Unternehmensdaten"""
+    
+    # Lade erweiterte Konfiguration
+    extended_config = load_extended_config(config)
+    company_info = extended_config.get('company_info', {})
+    
+    # Extrahiere Unternehmensdaten
+    company_name = company_info.get('company_name', config.name)
+    primary_color = config.branding.get("primary_color", "#1f3a93")
+    secondary_color = config.branding.get("secondary_color", "#34495e")
+    logo_url = extended_config.get('logo_url')
+    
+    # Header mit Logo-Bereich
+    col1, col2, col3 = st.columns([1, 3, 1])
+    
+    with col1:
+        # Logo-Bereich
+        if logo_url and Path(logo_url).exists():
+            st.image(logo_url, width=80)
+        else:
+            # Auto-generierte Initialen als Fallback
+            initials = ''.join([word[0].upper() for word in company_name.split()[:2]])
+            st.markdown(f"""
+            <div style="
+                width: 80px; 
+                height: 80px; 
+                background: linear-gradient(135deg, {primary_color}, {secondary_color});
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+                margin: 0 auto;
+                border: 3px solid rgba(255,255,255,0.2);
+            ">{initials}</div>
+            """, unsafe_allow_html=True)
+    
+    with col2:
+        # Unternehmensinfo
+        st.markdown(f"""
+        <div class="chatbot-header">
+            <h1>🤖 {config.name}</h1>
+            <p>{company_name}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        # Zurück-Button
+        if st.button("🏠 Zurück"):
+            st.switch_page("app.py")
+
+def render_contact_persons_sidebar(config: ChatbotConfig):
+    """Rendert Kontaktpersonen in der Sidebar (falls aktiviert)"""
+    
+    # Lade erweiterte Konfiguration
+    extended_config = load_extended_config(config)
+    contact_persons_enabled = extended_config.get('contact_persons_enabled', False)
+    contact_persons = extended_config.get('contact_persons', [])
+    
+    if contact_persons_enabled:
+        with st.sidebar:
+            st.markdown("### 👥 Ansprechpartner")
+            
+            # Verwende echte Kontaktpersonen oder Beispieldaten
+            if contact_persons:
+                contacts_to_show = contact_persons
+            else:
+                # Fallback: Beispiel-Kontaktpersonen
+                contacts_to_show = [
+                    {
+                        "name": "Max Mustermann",
+                        "position": "Kundenberater", 
+                        "email": "max@beispiel.de",
+                        "specialization": "Produktberatung"
+                    },
+                    {
+                        "name": "Anna Schmidt",
+                        "position": "Support",
+                        "email": "anna@beispiel.de", 
+                        "specialization": "Technischer Support"
+                    }
+                ]
+            
+            for contact in contacts_to_show:
+                with st.expander(f"👤 {contact['name']}"):
+                    st.write(f"**Position:** {contact['position']}")
+                    st.write(f"**Spezialisierung:** {contact['specialization']}")
+                    
+                    if st.button(f"📧 Kontakt aufnehmen", key=f"contact_{contact['name']}"):
+                        st.success(f"Kontaktanfrage an {contact['name']} gesendet!")
+                        # Hier würde die Email-Funktion implementiert werden
+
+def render_email_capture_prompt(config: ChatbotConfig, chatbot_id: str):
+    """Rendert Email-Capture-Prompt (falls aktiviert und Bedingungen erfüllt)"""
+    
+    # Lade erweiterte Konfiguration
+    extended_config = load_extended_config(config)
+    email_capture_enabled = extended_config.get('email_capture_enabled', False)
+    
+    if email_capture_enabled:
+        # Prüfe Trigger-Bedingungen (z.B. Anzahl Nachrichten)
+        message_count = len(st.session_state.get(f"messages_{chatbot_id}", []))
+        
+        # Zeige Email-Capture nach 3 Nachrichten
+        if message_count >= 3 and not st.session_state.get(f"email_captured_{chatbot_id}", False):
+            st.markdown("---")
+            st.markdown("### 📧 Bleiben wir in Kontakt")
+            
+            email_prompt = "Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen."
+            st.info(email_prompt)
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                email = st.text_input(
+                    "Email-Adresse", 
+                    placeholder="ihre.email@beispiel.de",
+                    key=f"email_capture_{chatbot_id}"
+                )
+            
+            with col2:
+                if st.button("📧 Absenden", key=f"submit_email_{chatbot_id}"):
+                    if email and "@" in email:
+                        # Hier würde die Email in die Datenbank gespeichert werden
+                        st.session_state[f"email_captured_{chatbot_id}"] = True
+                        st.success("Vielen Dank! Wir werden uns bei Ihnen melden.")
+                        st.rerun()
+                    else:
+                        st.error("Bitte geben Sie eine gültige Email-Adresse ein.")
+
+def render_business_hours_info(config: ChatbotConfig):
+    """Rendert Öffnungszeiten-Info (falls konfiguriert)"""
+    
+    # Lade erweiterte Konfiguration
+    extended_config = load_extended_config(config)
+    business_hours = extended_config.get('business_hours', {})
+    
+    if business_hours and any(business_hours.values()):
+        with st.sidebar:
+            st.markdown("### 🕒 Öffnungszeiten")
+            
+            # Zeige echte Öffnungszeiten
+            days_german = {
+                'monday': 'Montag',
+                'tuesday': 'Dienstag', 
+                'wednesday': 'Mittwoch',
+                'thursday': 'Donnerstag',
+                'friday': 'Freitag',
+                'saturday': 'Samstag',
+                'sunday': 'Sonntag'
+            }
+            
+            hours_text = ""
+            for day_en, day_de in days_german.items():
+                if day_en in business_hours:
+                    day_info = business_hours[day_en]
+                    if day_info.get('closed', False):
+                        hours_text += f"**{day_de}:** Geschlossen\n"
+                    else:
+                        start = day_info.get('start', '09:00')
+                        end = day_info.get('end', '17:00')
+                        hours_text += f"**{day_de}:** {start} - {end}\n"
+            
+            if hours_text:
+                st.info(hours_text)
+            else:
+                # Fallback
+                st.info("**Mo-Fr:** 09:00 - 17:00\n**Sa-So:** Geschlossen")
+
 def main():
     # Chatbot-ID aus Session State oder URL Parameter
     if "selected_chatbot_id" not in st.session_state:
@@ -318,6 +538,11 @@ def main():
     # Page Setup
     setup_page_config()
     st.markdown(get_custom_css(config), unsafe_allow_html=True)
+    
+    # Erweiterte UI-Komponenten
+    render_company_header(config)
+    render_contact_persons_sidebar(config)
+    render_business_hours_info(config)
     
     # Session State Initialisierung
     if "device_id" not in st.session_state:
@@ -354,14 +579,6 @@ def main():
             # Supabase-Fehler abfangen und lokalen Modus verwenden
             st.session_state[f"supabase_initialized_{chatbot_id}"] = False
     
-    # Header
-    st.markdown(f"""
-    <div class="chatbot-header">
-        <h1>🤖 {config.name}</h1>
-        <p>{config.description}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
     # Begrüßungsnachricht (nur beim ersten Besuch)
     if not st.session_state[f"messages_{chatbot_id}"]:
         welcome_message = config.branding.get("welcome_message", f"Hallo! Ich bin {config.name}, dein persönlicher Assistent.")
@@ -378,12 +595,11 @@ def main():
     
     # Chat History anzeigen
     for msg in st.session_state[f"messages_{chatbot_id}"]:
-        avatar = "assets/W_transparent.png" if msg["role"] == "assistant" else None
         display_chat_message_with_sources(
             msg["role"], 
             msg["content"], 
             msg.get("sources", []), 
-            avatar
+            config
         )
     
     # Chat Input
@@ -394,7 +610,7 @@ def main():
             "content": user_input,
             "sources": []
         })
-        display_chat_message_with_sources("user", user_input)
+        display_chat_message_with_sources("user", user_input, config=config)
         
         # Bot-Antwort generieren
         with st.spinner("Antwort wird generiert..."):
@@ -406,7 +622,7 @@ def main():
                     "content": answer,
                     "sources": sources
                 })
-                display_chat_message_with_sources("assistant", answer, sources, "assets/W_transparent.png")
+                display_chat_message_with_sources("assistant", answer, sources, config)
                 
                 # In Supabase speichern (falls verfügbar)
                 if conversation_id and st.session_state.get(f"supabase_initialized_{chatbot_id}", False):
@@ -426,6 +642,9 @@ def main():
                     "content": error_msg,
                     "sources": []
                 })
+    
+    # Email-Capture (falls aktiviert und Bedingungen erfüllt)
+    render_email_capture_prompt(config, chatbot_id)
     
     # Sidebar mit Chatbot-Info
     with st.sidebar:

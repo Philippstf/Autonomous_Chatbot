@@ -1,0 +1,113 @@
+{
+  "id": "1bf3d03a",
+  "name": "21_Oaks Bot",
+  "description": "Test",
+  "website_url": "https://21-oaks.com/",
+  "documents": [],
+  "created_at": "2025-07-14T11:06:27.090025",
+  "branding": {
+    "primary_color": "#1f3a93",
+    "secondary_color": "#34495e",
+    "accent_color": "#e74c3c",
+    "background_color": "#f8f9fa",
+    "text_color": "#2c3e50",
+    "font_family": "Roboto",
+    "font_size": "Normal",
+    "chat_width": "Normal (800px)",
+    "message_style": "Sprechblasen",
+    "company_info": {
+      "company_name": "21 Oaks Capital",
+      "industry": "",
+      "company_size": "",
+      "website": "",
+      "email": "info@gmail.com",
+      "phone": "",
+      "address": {
+        "street": "",
+        "zip_code": "",
+        "city": "",
+        "country": "Deutschland"
+      },
+      "business_hours": {
+        "monday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "tuesday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "wednesday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "thursday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "friday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "saturday": {
+          "closed": true
+        },
+        "sunday": {
+          "closed": true
+        }
+      },
+      "social_media": {
+        "linkedin": "",
+        "facebook": "",
+        "instagram": "",
+        "twitter": "",
+        "youtube": "",
+        "xing": ""
+      }
+    },
+    "email_capture_enabled": false,
+    "email_capture_config": {},
+    "contact_persons_enabled": false,
+    "contact_persons": [],
+    "contact_trigger_config": {},
+    "behavior_settings": {
+      "tone": "Professionell",
+      "response_length": "Mittel",
+      "formality": "Sie (förmlich)",
+      "language": "Deutsch",
+      "fallback_language": "Keine",
+      "auto_translate": false,
+      "custom_instructions": "",
+      "forbidden_topics": [
+        "Politik",
+        "Erotik"
+      ]
+    },
+    "website_config": {
+      "url": "https://21-oaks.com/",
+      "crawl_depth": 2,
+      "include_patterns": [],
+      "exclude_patterns": [],
+      "max_pages": 100
+    },
+    "document_config": {
+      "files": [],
+      "chunk_size": 1000,
+      "overlap": 100
+    },
+    "manual_text": "",
+    "uploaded_logo": null,
+    "deployment_config": {
+      "url_name": "",
+      "is_public": true,
+      "custom_domain": "",
+      "ssl_enabled": true,
+      "preview_url": "https://chatbots.vubot.de/bot/21_oaks-bot"
+    }
+  }
+}

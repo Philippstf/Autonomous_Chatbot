@@ -1,19 +1,35 @@
 {
   "chatbots": {
-    "dae2092e": {
-      "name": "Protexium_Bot_allv1",
-      "description": "Kundenservice-Bot der auf Kundenanfragen reagiert",
-      "created_at": "2025-07-14T02:17:27.947388",
-      "website_url": "https://protexium.de/",
+    "b12f3f02": {
+      "name": "Protexium_Bot_final",
+      "description": "alsdd",
+      "created_at": "2025-07-14T03:51:31.584838",
+      "website_url": "https://protexium.de",
+      "document_count": 5,
+      "status": "active"
+    },
+    "a00a7607": {
+      "name": "Protexium Security GmbH",
+      "description": "Kundenservice-Bot",
+      "created_at": "2025-07-14T10:57:09.612654",
+      "website_url": "https://protexium.de",
+      "document_count": 5,
+      "status": "active"
+    },
+    "1bf3d03a": {
+      "name": "21_Oaks Bot",
+      "description": "Test",
+      "created_at": "2025-07-14T11:06:27.090025",
+      "website_url": "https://21-oaks.com/",
       "document_count": 0,
       "status": "active"
     },
-    "bd1575a6": {
-      "name": "Protexium_bot_final",
-      "description": "Chatbot, der auf Kundenanfragen reagiert und höflich aber nicht aufdringlich Fragen beantwortet.",
-      "created_at": "2025-07-14T02:27:45.539982",
-      "website_url": "https://protexium.de",
-      "document_count": 5,
+    "48567b0b": {
+      "name": "ITM_Beratungsgesellschaft",
+      "description": "Kundenbot",
+      "created_at": "2025-07-14T18:22:29.927254",
+      "website_url": "https://www.itm.net/",
+      "document_count": 0,
       "status": "active"
     }
   },

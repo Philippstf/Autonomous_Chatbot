@@ -1,0 +1,135 @@
+{
+  "id": "48567b0b",
+  "name": "ITM_Beratungsgesellschaft",
+  "description": "Kundenbot",
+  "website_url": "https://www.itm.net/",
+  "documents": [],
+  "created_at": "2025-07-14T18:22:29.927254",
+  "branding": {
+    "primary_color": "#5476e2",
+    "secondary_color": "#ffffff",
+    "accent_color": "#e74c3c",
+    "background_color": "#f8f9fa",
+    "text_color": "#2c3e50",
+    "font_family": "Roboto",
+    "font_size": "Normal",
+    "chat_width": "Normal (800px)",
+    "message_style": "Sprechblasen",
+    "company_info": {
+      "company_name": "ITM Beratungsgesellschaft",
+      "industry": "IT & Software",
+      "company_size": "",
+      "website": "https://www.itm.net/",
+      "email": "Horvat@itm.de",
+      "phone": "01782946016",
+      "address": {
+        "street": "",
+        "zip_code": "",
+        "city": "",
+        "country": "Deutschland"
+      },
+      "business_hours": {
+        "monday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "tuesday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "wednesday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "thursday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "friday": {
+          "closed": false,
+          "start": "09:00",
+          "end": "17:00"
+        },
+        "saturday": {
+          "closed": true
+        },
+        "sunday": {
+          "closed": true
+        }
+      },
+      "social_media": {
+        "linkedin": "",
+        "facebook": "",
+        "instagram": "",
+        "twitter": "",
+        "youtube": "",
+        "xing": ""
+      }
+    },
+    "email_capture_enabled": false,
+    "email_capture_config": {},
+    "contact_persons_enabled": true,
+    "contact_persons": [
+      {
+        "name": "Mia Horvat",
+        "position": "Head of Sales",
+        "email": "info@hgorvat.de",
+        "department": "Vertrieb",
+        "phone": "01782946016",
+        "specialization": "",
+        "languages": [
+          "Deutsch"
+        ],
+        "profile_image": "Protexium_Logo_Eckig.jpg"
+      }
+    ],
+    "contact_trigger_config": {
+      "keywords": [
+        "ansprechpartner",
+        "kontakt",
+        "verkauf",
+        "beratung",
+        "support"
+      ],
+      "show_after_messages": 3
+    },
+    "behavior_settings": {
+      "tone": "Freundlich",
+      "response_length": "Mittel",
+      "formality": "Sie (förmlich)",
+      "language": "Deutsch",
+      "fallback_language": "Keine",
+      "auto_translate": false,
+      "custom_instructions": "",
+      "forbidden_topics": [
+        "Politik",
+        "Erotik"
+      ]
+    },
+    "website_config": {
+      "url": "https://www.itm.net/",
+      "crawl_depth": 2,
+      "include_patterns": [],
+      "exclude_patterns": [],
+      "max_pages": 100
+    },
+    "document_config": {
+      "files": [],
+      "chunk_size": 1000,
+      "overlap": 100
+    },
+    "manual_text": "",
+    "uploaded_logo": null,
+    "deployment_config": {
+      "url_name": "itm_ist_geil",
+      "is_public": true,
+      "custom_domain": "",
+      "ssl_enabled": true,
+      "preview_url": "https://chatbots.vubot.de/bot/itm_ist_geil"
+    }
+  }
+}
