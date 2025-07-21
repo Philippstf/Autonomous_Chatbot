@@ -1,0 +1,67 @@
+{
+  "id": "4b255d80",
+  "name": "ProtexSec",
+  "description": "",
+  "website_url": "https://protexium.de",
+  "documents": [],
+  "created_at": "2025-07-21T22:11:27.256804",
+  "branding": {
+    "primary_color": "#1f3a93",
+    "secondary_color": "#34495e",
+    "accent_color": "#e74c3c",
+    "logo_url": null,
+    "welcome_message": "slkdandd",
+    "company_info": {
+      "company_name": "Protexium Sec",
+      "industry": "",
+      "email": "asdmlamda@gmail.com",
+      "phone": "",
+      "website": "",
+      "address": {
+        "street": "",
+        "zip_code": "",
+        "city": "",
+        "country": "Deutschland"
+      },
+      "business_hours": {},
+      "social_media": {
+        "linkedin": "",
+        "facebook": "",
+        "instagram": "",
+        "twitter": ""
+      }
+    },
+    "features": {
+      "email_capture_enabled": false,
+      "email_capture_config": {
+        "prompt": "Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen.",
+        "trigger_keywords": [
+          "preise",
+          "angebot",
+          "kontakt",
+          "beratung"
+        ],
+        "max_requests": 1,
+        "after_messages": 3
+      },
+      "contact_persons_enabled": false,
+      "behavior_settings": {
+        "tone": "Professionell",
+        "response_length": "Mittel",
+        "formality": "Sie (förmlich)",
+        "language": "Deutsch",
+        "custom_instructions": ""
+      }
+    },
+    "contact_persons": [],
+    "behavior_settings": {
+      "tone": "Professionell",
+      "response_length": "Mittel",
+      "formality": "Sie (förmlich)",
+      "language": "Deutsch",
+      "custom_instructions": ""
+    },
+    "deployment_config": {},
+    "manual_text": ""
+  }
+}

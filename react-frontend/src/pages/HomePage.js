@@ -13,6 +13,8 @@ import {
   IconButton,
   Alert,
   Skeleton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -28,6 +30,8 @@ import { getAllChatbots, getAnalyticsOverview, healthCheck } from '../services/a
 
 function HomePage() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Fetch data using React Query
   const {

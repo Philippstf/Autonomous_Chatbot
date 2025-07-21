@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 
 // Import pages
@@ -15,6 +15,18 @@ import Navigation from './components/Navigation';
 import Header from './components/Header';
 
 function App() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  // Automatically close sidebar on mobile, open on desktop
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
+
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
   return (
     <Box
       sx={{
@@ -24,19 +36,30 @@ function App() {
       }}
     >
       {/* Navigation */}
-      <Navigation />
+      <Navigation 
+        open={sidebarOpen} 
+        onToggle={handleSidebarToggle}
+        isMobile={isMobile}
+      />
       
       {/* Main Content */}
       <Box
         component="main"
         sx={{
-          marginLeft: { xs: 0, md: '240px' },
+          marginLeft: {
+            xs: 0,
+            md: sidebarOpen ? '240px' : '0px'
+          },
           minHeight: '100vh',
           transition: 'margin-left 0.3s ease',
         }}
       >
         {/* Header */}
-        <Header />
+        <Header 
+          onSidebarToggle={handleSidebarToggle}
+          sidebarOpen={sidebarOpen}
+          isMobile={isMobile}
+        />
         
         {/* Page Content */}
         <Box sx={{ p: 3 }}>

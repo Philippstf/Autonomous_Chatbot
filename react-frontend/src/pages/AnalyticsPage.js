@@ -10,6 +10,8 @@ import {
   Chip,
   Alert,
   Skeleton,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -23,6 +25,9 @@ import { motion } from 'framer-motion';
 import { getAnalyticsOverview, getAllChatbots } from '../services/api';
 
 function AnalyticsPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
@@ -37,16 +42,33 @@ function AnalyticsPage() {
 
   const MetricCard = ({ title, value, change, icon, color = 'primary', loading = false }) => (
     <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 0 },
+          textAlign: { xs: 'center', sm: 'left' }
+        }}>
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Typography 
+              variant="subtitle2" 
+              color="text.secondary" 
+              gutterBottom
+              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+            >
               {title}
             </Typography>
             {loading ? (
               <Skeleton variant="text" width={80} height={40} />
             ) : (
-              <Typography variant="h4" fontWeight={700} color="text.primary">
+              <Typography 
+                variant={isMobile ? 'h5' : 'h4'} 
+                fontWeight={700} 
+                color="text.primary"
+                sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
+              >
                 {value}
               </Typography>
             )}
@@ -64,8 +86,8 @@ function AnalyticsPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 48,
-              height: 48,
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 },
               borderRadius: '50%',
               background: color === 'primary' 
                 ? 'rgba(31, 58, 147, 0.1)' 

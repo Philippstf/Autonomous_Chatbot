@@ -11,6 +11,7 @@ import {
   Box,
   Divider,
   useTheme,
+  IconButton,
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -19,6 +20,7 @@ import {
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
@@ -66,7 +68,7 @@ const bottomNavigationItems = [
   },
 ];
 
-function Navigation() {
+function Navigation({ open, onToggle, isMobile }) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -139,7 +141,12 @@ function Navigation() {
 
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? "temporary" : "persistent"}
+      open={open}
+      onClose={onToggle}
+      ModalProps={{
+        keepMounted: true, // Better mobile performance
+      }}
       sx={{
         width: drawerWidth,
         flexShrink: 0,
@@ -159,8 +166,27 @@ function Navigation() {
           background: 'linear-gradient(135deg, #1f3a93, #34495e)',
           color: 'white',
           textAlign: 'center',
+          position: 'relative',
         }}
       >
+        {/* Close button for mobile */}
+        {isMobile && (
+          <IconButton
+            onClick={onToggle}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
+        
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

@@ -14,6 +14,7 @@ import {
   Notifications as NotificationsIcon,
   AccountCircle as AccountCircleIcon,
   Brightness4 as Brightness4Icon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
@@ -50,7 +51,7 @@ const pageConfig = {
   },
 };
 
-function Header() {
+function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
   const location = useLocation();
   
   // Get current page config or default
@@ -78,17 +79,41 @@ function Header() {
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between', py: 2 }}>
+        {/* Mobile Menu Button */}
+        {isMobile && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={onSidebarToggle}
+            edge="start"
+            sx={{
+              mr: 2,
+              color: 'text.primary',
+              '&:hover': {
+                backgroundColor: 'rgba(31, 58, 147, 0.1)',
+              },
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         {/* Page Title Section */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
+          style={{ flex: 1 }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: { xs: 1, sm: 2 },
+            ml: isMobile ? 0 : 0
+          }}>
             <Typography
               variant="h4"
               sx={{
-                fontSize: '2rem',
+                fontSize: { xs: '1.5rem', sm: '2rem' },
                 filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))',
               }}
             >
@@ -96,7 +121,7 @@ function Header() {
             </Typography>
             <Box>
               <Typography
-                variant="h4"
+                variant={isMobile ? "h5" : "h4"}
                 fontWeight={700}
                 color="text.primary"
                 sx={{
@@ -104,14 +129,18 @@ function Header() {
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
+                  fontSize: { xs: '1.25rem', sm: '2rem' },
                 }}
               >
                 {currentPage.title}
               </Typography>
               <Typography
-                variant="subtitle1"
+                variant={isMobile ? "body2" : "subtitle1"}
                 color="text.secondary"
-                sx={{ mt: 0.5 }}
+                sx={{ 
+                  mt: 0.5,
+                  display: { xs: 'none', sm: 'block' }
+                }}
               >
                 {currentPage.subtitle}
               </Typography>

@@ -18,6 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,6 +35,9 @@ import { getAllChatbots, deleteChatbot } from '../services/api';
 
 function ChatbotListPage() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [selectedChatbot, setSelectedChatbot] = React.useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -85,7 +90,7 @@ function ChatbotListPage() {
           },
         }}
       >
-        <CardContent>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ flexGrow: 1 }}>
@@ -200,34 +205,61 @@ function ChatbotListPage() {
   );
 
   return (
-    <Box sx={{ maxWidth: '1400px', mx: 'auto' }}>
+    <Box sx={{ 
+      maxWidth: '1400px', 
+      mx: 'auto',
+      px: { xs: 1, sm: 2, md: 3 }
+    }}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', md: 'center' }, 
+          mb: 4,
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: { xs: 2, md: 0 }
+        }}>
           <Box>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
+            <Typography 
+              variant={isMobile ? 'h5' : 'h4'} 
+              fontWeight={700} 
+              gutterBottom
+              sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
+            >
               My Chatbots
             </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
+            <Typography 
+              variant={isMobile ? 'body2' : 'subtitle1'} 
+              color="text.secondary"
+              sx={{ display: { xs: 'none', sm: 'block' } }}
+            >
               {chatbotsData ? `${chatbotsData.total} chatbot(s), ${chatbotsData.active} active` : 'Loading...'}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: { xs: 1, sm: 2 },
+            flexDirection: { xs: 'column', sm: 'row' },
+            width: { xs: '100%', md: 'auto' }
+          }}>
             <Button
               variant="outlined"
-              startIcon={<RefreshIcon />}
+              startIcon={!isSmall ? <RefreshIcon /> : null}
               onClick={refetch}
+              size={isMobile ? 'small' : 'medium'}
             >
               Refresh
             </Button>
             <Button
               variant="contained"
-              startIcon={<AddIcon />}
+              startIcon={!isSmall ? <AddIcon /> : null}
               onClick={() => navigate('/create')}
+              size={isMobile ? 'small' : 'medium'}
               sx={{
                 background: 'linear-gradient(135deg, #1f3a93, #34495e)',
                 '&:hover': {
@@ -235,7 +267,7 @@ function ChatbotListPage() {
                 },
               }}
             >
-              Create New Chatbot
+              {isSmall ? 'Create' : 'Create New Chatbot'}
             </Button>
           </Box>
         </Box>
@@ -276,32 +308,44 @@ function ChatbotListPage() {
             ))}
           </Grid>
         ) : chatbotsData?.chatbots?.length > 0 ? (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             {chatbotsData.chatbots.map((chatbot) => (
-              <Grid item xs={12} sm={6} md={4} key={chatbot.config.id}>
+              <Grid item xs={12} sm={6} lg={4} key={chatbot.config.id}>
                 <ChatbotCard chatbot={chatbot} />
               </Grid>
             ))}
           </Grid>
         ) : (
           <Card>
-            <CardContent sx={{ textAlign: 'center', py: 8 }}>
+            <CardContent sx={{ textAlign: 'center', py: { xs: 4, sm: 6, md: 8 } }}>
               <Typography
                 variant="h1"
-                sx={{ fontSize: '4rem', mb: 2, opacity: 0.3 }}
+                sx={{ 
+                  fontSize: { xs: '2.5rem', sm: '3rem', md: '4rem' }, 
+                  mb: 2, 
+                  opacity: 0.3 
+                }}
               >
                 🤖
               </Typography>
-              <Typography variant="h5" color="text.secondary" gutterBottom>
+              <Typography 
+                variant={isMobile ? 'h6' : 'h5'} 
+                color="text.secondary" 
+                gutterBottom
+              >
                 No chatbots found
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+              <Typography 
+                variant="body1" 
+                color="text.secondary" 
+                sx={{ mb: 4, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              >
                 Create your first AI assistant to get started
               </Typography>
               <Button
                 variant="contained"
-                size="large"
-                startIcon={<AddIcon />}
+                size={isMobile ? 'medium' : 'large'}
+                startIcon={!isSmall ? <AddIcon /> : null}
                 onClick={() => navigate('/create')}
               >
                 Create Your First Chatbot

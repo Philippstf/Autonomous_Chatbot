@@ -5,9 +5,13 @@ import {
   Typography,
   Chip,
   Autocomplete,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 
 function BasicSettingsStep({ formData, updateFormData }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const handleInputChange = (field, value) => {
     updateFormData({ [field]: value });
   };
@@ -18,11 +22,23 @@ function BasicSettingsStep({ formData, updateFormData }) {
   ];
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <Box sx={{ px: { xs: 1, sm: 0 } }}>
+      <Typography 
+        variant={isMobile ? 'h6' : 'h5'} 
+        gutterBottom
+        sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+      >
         📋 Grundeinstellungen
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography 
+        variant="body2" 
+        color="text.secondary" 
+        sx={{ 
+          mb: 3,
+          fontSize: { xs: '0.875rem', sm: '1rem' },
+          display: { xs: 'none', sm: 'block' }
+        }}
+      >
         Definieren Sie die Grunddaten für Ihren Chatbot
       </Typography>
 
@@ -32,7 +48,12 @@ function BasicSettingsStep({ formData, updateFormData }) {
         value={formData.name || ''}
         onChange={(e) => handleInputChange('name', e.target.value)}
         placeholder="z.B. Kundenservice Assistant, Support Bot"
-        sx={{ mb: 3 }}
+        sx={{ 
+          mb: 3,
+          '& .MuiInputBase-input': {
+            fontSize: { xs: '16px', sm: '14px' } // Prevents zoom on iOS
+          }
+        }}
         required
       />
 
@@ -44,7 +65,12 @@ function BasicSettingsStep({ formData, updateFormData }) {
         value={formData.description || ''}
         onChange={(e) => handleInputChange('description', e.target.value)}
         placeholder="Beschreiben Sie den Zweck und die Aufgaben Ihres Chatbots..."
-        sx={{ mb: 3 }}
+        sx={{ 
+          mb: 3,
+          '& .MuiInputBase-input': {
+            fontSize: { xs: '16px', sm: '14px' }
+          }
+        }}
       />
 
       <Autocomplete

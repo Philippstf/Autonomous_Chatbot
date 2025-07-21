@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: vubot-backend
+    env: python
+    buildCommand: "pip install -r requirements-production.txt && python build.py"
+    startCommand: "python react_app.py"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.11.0

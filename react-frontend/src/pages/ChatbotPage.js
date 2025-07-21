@@ -15,6 +15,8 @@ import {
   Divider,
   Fade,
   Container,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -28,6 +30,9 @@ import { getChatConfig, sendChatMessage } from '../services/api';
 
 function ChatbotPage() {
   const { id: chatbotId } = useParams();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -149,15 +154,15 @@ function ChatbotPage() {
           display: 'flex',
           alignItems: 'flex-start',
           gap: 1.5,
-          maxWidth: '75%',
+          maxWidth: isMobile ? '90%' : '75%',
           flexDirection: message.type === 'user' ? 'row-reverse' : 'row',
         }}
       >
         {/* Avatar */}
         <Avatar
           sx={{
-            width: 36,
-            height: 36,
+            width: isMobile ? 32 : 36,
+            height: isMobile ? 32 : 36,
             background: message.type === 'user' 
               ? 'linear-gradient(135deg, #1f3a93, #4a69bd)'
               : 'linear-gradient(135deg, #34495e, #5a6c7d)',
@@ -192,11 +197,12 @@ function ChatbotPage() {
             }}
           >
             <Typography 
-              variant="body1" 
+              variant={isMobile ? 'body2' : 'body1'} 
               sx={{ 
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 lineHeight: 1.6,
+                fontSize: isMobile ? '0.875rem' : '1rem',
               }}
             >
               {message.content}
@@ -276,7 +282,7 @@ function ChatbotPage() {
         <Paper
           elevation={4}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             mb: 3,
             borderRadius: 2,
             background: `linear-gradient(135deg, ${chatConfig?.branding?.primary_color || '#1f3a93'}, ${chatConfig?.branding?.secondary_color || '#34495e'})`,
@@ -286,12 +292,27 @@ function ChatbotPage() {
             textAlign: 'center',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-            <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'center', md: 'flex-start' }, 
+            mb: 2,
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: { xs: 2, md: 0 }
+          }}>
+            <Box sx={{ textAlign: { xs: 'center', md: 'left' }, flex: 1 }}>
+              <Typography 
+                variant={isMobile ? 'h5' : 'h4'} 
+                fontWeight={700} 
+                gutterBottom
+                sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.25rem' } }}
+              >
                 🤖 {chatConfig?.name}
               </Typography>
-              <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+              <Typography 
+                variant={isMobile ? 'body2' : 'subtitle1'} 
+                sx={{ opacity: 0.9, display: { xs: 'none', sm: 'block' } }}
+              >
                 {chatConfig?.description || 'AI Assistant'}
               </Typography>
             </Box>
@@ -338,7 +359,7 @@ function ChatbotPage() {
           sx={{
             minHeight: 400,
             height: 'auto',
-            maxHeight: '75vh',
+            maxHeight: { xs: '70vh', md: '75vh' },
             display: 'flex',
             flexDirection: 'column',
             borderRadius: 2,
@@ -354,9 +375,9 @@ function ChatbotPage() {
             sx={{
               flexGrow: 1,
               minHeight: 300,
-              maxHeight: '60vh',
+              maxHeight: { xs: '50vh', md: '60vh' },
               overflowY: 'auto',
-              p: 3,
+              p: { xs: 1.5, sm: 2, md: 3 },
               
               // Custom scrollbar for dark theme
               '&::-webkit-scrollbar': {
@@ -420,7 +441,7 @@ function ChatbotPage() {
           {/* Input Area */}
           <Box
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
               background: 'linear-gradient(135deg, rgba(31, 58, 147, 0.1), rgba(52, 73, 94, 0.1))',
               backdropFilter: 'blur(10px)',
@@ -459,9 +480,10 @@ function ChatbotPage() {
                   variant="contained"
                   disabled={!inputMessage.trim() || isLoading}
                   sx={{
-                    borderRadius: '50%',
-                    minWidth: 56,
-                    height: 56,
+                    borderRadius: isMobile ? 2 : '50%',
+                    minWidth: isMobile ? 64 : 56,
+                    height: isMobile ? 48 : 56,
+                    px: isMobile ? 2 : 0,
                     background: 'linear-gradient(135deg, #1f3a93, #4a69bd)',
                     boxShadow: '0 4px 15px rgba(31, 58, 147, 0.3)',
                     transition: 'all 0.3s ease',

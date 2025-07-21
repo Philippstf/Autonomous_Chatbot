@@ -10,6 +10,8 @@ import {
   Typography,
   Alert,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createChatbot, getCreationProgress } from '../services/api';
@@ -100,6 +102,9 @@ const initialFormData = {
 
 function CreateChatbotPage() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState(initialFormData);
   const [isCreating, setIsCreating] = useState(false);
@@ -224,14 +229,23 @@ function CreateChatbotPage() {
 
   if (isCreating) {
     return (
-      <Box sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center' }}>
+      <Box sx={{ 
+        maxWidth: 800, 
+        mx: 'auto', 
+        textAlign: 'center',
+        px: { xs: 2, sm: 3 }
+      }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Paper sx={{ p: 6 }}>
-            <Typography variant="h4" gutterBottom>
+          <Paper sx={{ p: { xs: 3, sm: 4, md: 6 } }}>
+            <Typography 
+              variant={isMobile ? "h5" : "h4"} 
+              gutterBottom
+              sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
+            >
               🚀 Creating Your Chatbot...
             </Typography>
             
@@ -270,28 +284,42 @@ function CreateChatbotPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ 
+      maxWidth: 1200, 
+      mx: 'auto',
+      px: { xs: 1, sm: 2, md: 3 }
+    }}>
       {/* Progress Stepper */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 4 }}>
+          <Stepper 
+            activeStep={activeStep} 
+            alternativeLabel={!isSmall}
+            orientation={isSmall ? 'vertical' : 'horizontal'}
+          >
             {wizardSteps.map((step, index) => (
               <Step key={step.id}>
                 <StepLabel
                   sx={{
                     '& .MuiStepLabel-label': {
-                      fontSize: '0.9rem',
+                      fontSize: { xs: '0.8rem', sm: '0.9rem' },
                       fontWeight: activeStep === index ? 600 : 400,
+                      display: { xs: 'none', sm: 'block' },
                     },
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span style={{ fontSize: '1.2rem' }}>{step.icon}</span>
-                    {step.label}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: { xs: 0.5, sm: 1 },
+                    flexDirection: { xs: 'column', sm: 'row' }
+                  }}>
+                    <span style={{ fontSize: isMobile ? '1rem' : '1.2rem' }}>{step.icon}</span>
+                    <span style={{ display: isSmall ? 'none' : 'inline' }}>{step.label}</span>
                   </Box>
                 </StepLabel>
               </Step>
@@ -325,7 +353,7 @@ function CreateChatbotPage() {
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
         >
-          <Paper sx={{ p: 4, mb: 4 }}>
+          <Paper sx={{ p: { xs: 2, sm: 3, md: 4 }, mb: 4 }}>
             {renderStepContent(activeStep)}
           </Paper>
         </motion.div>
@@ -337,19 +365,40 @@ function CreateChatbotPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 } }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: { xs: 'stretch', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 2, sm: 0 }
+          }}>
             <Button
               onClick={handleBack}
               disabled={activeStep === 0}
               variant="outlined"
-              size="large"
+              size={isMobile ? "medium" : "large"}
+              sx={{ order: { xs: 2, sm: 1 } }}
             >
               Back
             </Button>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2,
+              alignItems: 'center',
+              justifyContent: { xs: 'space-between', sm: 'flex-end' },
+              order: { xs: 1, sm: 2 },
+              width: { xs: '100%', sm: 'auto' }
+            }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ 
+                  alignSelf: 'center',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                }}
+              >
                 Step {activeStep + 1} of {wizardSteps.length}
               </Typography>
 
@@ -357,7 +406,7 @@ function CreateChatbotPage() {
                 <Button
                   onClick={handleCreateChatbot}
                   variant="contained"
-                  size="large"
+                  size={isMobile ? "medium" : "large"}
                   disabled={!validateStep(activeStep) || isCreating}
                   sx={{
                     background: 'linear-gradient(135deg, #1f3a93, #34495e)',
@@ -372,7 +421,7 @@ function CreateChatbotPage() {
                 <Button
                   onClick={handleNext}
                   variant="contained"
-                  size="large"
+                  size={isMobile ? "medium" : "large"}
                   disabled={!validateStep(activeStep)}
                 >
                   Next

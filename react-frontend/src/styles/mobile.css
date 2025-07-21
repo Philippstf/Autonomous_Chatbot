@@ -1,0 +1,249 @@
+/* Mobile-First Responsive Styles for Chatbot Platform */
+
+/* Base mobile styles */
+@media (max-width: 768px) {
+  /* Enhanced mobile layouts */
+  .mobile-stack {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  .mobile-padding {
+    padding: 12px !important;
+  }
+
+  .mobile-text-center {
+    text-align: center !important;
+  }
+
+  .mobile-margin-bottom {
+    margin-bottom: 16px !important;
+  }
+
+  /* Mobile-friendly touch targets */
+  button, .clickable {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 16px;
+  }
+
+  /* Ensure text inputs are readable and don't trigger zoom on iOS */
+  input, textarea, select {
+    font-size: 16px !important;
+    padding: 12px !important;
+  }
+
+  /* Mobile card adjustments */
+  .MuiCard-root {
+    margin: 8px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Mobile typography */
+  .mobile-title {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+  }
+
+  .mobile-subtitle {
+    font-size: 0.875rem !important;
+    opacity: 0.8;
+  }
+}
+
+/* Extra small screens (phones) */
+@media (max-width: 480px) {
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-text-small {
+    font-size: 0.75rem !important;
+  }
+
+  /* Smaller UI elements */
+  .step-circle {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+
+  /* Reduced padding for small screens */
+  .mobile-compact {
+    padding: 8px !important;
+    margin: 4px !important;
+  }
+
+  /* Stack elements vertically on very small screens */
+  .mobile-vertical-stack > * {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+/* Tablet landscape and small desktop */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .tablet-padding {
+    padding: 20px;
+  }
+}
+
+/* Desktop and larger screens */
+@media (min-width: 1025px) {
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .desktop-padding {
+    padding: 32px;
+  }
+}
+
+/* Mobile navigation specific styles */
+@media (max-width: 768px) {
+  /* Ensure drawer doesn't block content */
+  .MuiDrawer-paper {
+    z-index: 1300 !important;
+  }
+
+  /* Mobile header adjustments */
+  .MuiToolbar-root {
+    min-height: 56px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Mobile menu button */
+  .mobile-menu-button {
+    margin-right: 16px;
+    color: inherit;
+  }
+
+  /* Responsive text sizing */
+  .mobile-responsive-text h1,
+  .mobile-responsive-text .MuiTypography-h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .mobile-responsive-text h2,
+  .mobile-responsive-text .MuiTypography-h2 {
+    font-size: 1.25rem !important;
+  }
+
+  .mobile-responsive-text h3,
+  .mobile-responsive-text .MuiTypography-h3 {
+    font-size: 1.125rem !important;
+  }
+
+  .mobile-responsive-text h4,
+  .mobile-responsive-text .MuiTypography-h4 {
+    font-size: 1rem !important;
+  }
+
+  .mobile-responsive-text h5,
+  .mobile-responsive-text .MuiTypography-h5 {
+    font-size: 0.875rem !important;
+  }
+
+  .mobile-responsive-text h6,
+  .mobile-responsive-text .MuiTypography-h6 {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Mobile form improvements */
+@media (max-width: 768px) {
+  .mobile-form-field {
+    margin-bottom: 16px !important;
+  }
+
+  .mobile-form-field .MuiInputBase-root {
+    font-size: 16px !important;
+  }
+
+  .mobile-form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .mobile-form-actions .MuiButton-root {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+}
+
+/* Accessibility improvements for mobile */
+@media (max-width: 768px) {
+  /* Increase touch target sizes */
+  .MuiIconButton-root {
+    padding: 12px !important;
+  }
+
+  .MuiButton-root {
+    min-height: 44px !important;
+    padding: 10px 16px !important;
+  }
+
+  /* Improve contrast and readability */
+  .mobile-high-contrast {
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: white !important;
+  }
+
+  /* Focus indicators */
+  .MuiButton-root:focus,
+  .MuiIconButton-root:focus,
+  .MuiInputBase-root:focus {
+    outline: 2px solid #1f3a93 !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* Mobile animations and transitions */
+@media (max-width: 768px) {
+  /* Reduce motion for better mobile performance */
+  .mobile-reduce-motion * {
+    animation-duration: 0.2s !important;
+    transition-duration: 0.2s !important;
+  }
+
+  /* Mobile-friendly slide animations */
+  .mobile-slide-up {
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+  }
+
+  .mobile-slide-up.open {
+    transform: translateY(0);
+  }
+}
+
+/* Print styles for mobile */
+@media print {
+  .no-print,
+  .MuiDrawer-root,
+  .MuiAppBar-root {
+    display: none !important;
+  }
+
+  .print-full-width {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}

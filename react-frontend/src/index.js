@@ -6,6 +6,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 import './styles/global.css';
+import './styles/mobile.css';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -20,6 +21,15 @@ const queryClient = new QueryClient({
 
 // Create Material-UI theme
 const theme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
   palette: {
     mode: 'dark',
     primary: {
