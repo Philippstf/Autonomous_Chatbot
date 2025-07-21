@@ -32,10 +32,20 @@ def main():
         print("⚠️ Continuing without React build (using backend only)")
         return
     
+    # Check if npm is available
+    try:
+        subprocess.run(["npm", "--version"], capture_output=True, check=True)
+        print("✅ npm found, building React frontend...")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("⚠️ npm not found, skipping React build")
+        print("📱 Backend-only mode: API will serve on all routes")
+        return
+    
     # Install dependencies
     print("📦 Installing dependencies...")
     if not run_command("npm install", cwd="react-frontend"):
-        sys.exit(1)
+        print("⚠️ npm install failed, continuing without React build")
+        return
     
     # Build React app
     print("🔨 Building React app...")
