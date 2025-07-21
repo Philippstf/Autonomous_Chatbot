@@ -1,0 +1,91 @@
+{
+  "id": "9f14fe31",
+  "name": "Protexium Security Gmbh allgemein",
+  "description": "Ein Bot der die gesamte Wissensdatenbank von protexium zur Verfügung hat",
+  "website_url": "https://protexium.de/",
+  "documents": [
+    "Präsentation_Protexium (3).pdf",
+    "DE_fuer_Vermittler.pdf",
+    "PDF_AnhangFuerVermittler_TNF (1).pdf",
+    "Schulung_Präsentation.pdf"
+  ],
+  "created_at": "2025-07-21T01:14:21.106327",
+  "branding": {
+    "primary_color": "#051034",
+    "secondary_color": "#1b3651",
+    "accent_color": "#781b12",
+    "logo_url": null,
+    "welcome_message": "Ich bin der Protexium Bot! Beginne das Gespräch indem du mich etwas fragst! ",
+    "company_info": {
+      "company_name": "Protexium Security GmbH",
+      "industry": "",
+      "email": "info@protexium.de",
+      "phone": "+4991292945775",
+      "website": "",
+      "address": {
+        "street": "Untere Rathausgasse 10",
+        "zip_code": "90530",
+        "city": "Wendelstein",
+        "country": "Deutschland"
+      },
+      "business_hours": {},
+      "social_media": {
+        "linkedin": "",
+        "facebook": "",
+        "instagram": "",
+        "twitter": ""
+      }
+    },
+    "features": {
+      "email_capture_enabled": true,
+      "email_capture_config": {
+        "prompt": "Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen.",
+        "trigger_keywords": [
+          "preise",
+          "angebot",
+          "kontakt",
+          "beratung"
+        ],
+        "max_requests": 1,
+        "after_messages": 3
+      },
+      "contact_persons_enabled": true,
+      "behavior_settings": {
+        "tone": "Professionell",
+        "response_length": "Mittel",
+        "formality": "Sie (förmlich)",
+        "language": "Deutsch",
+        "custom_instructions": ""
+      }
+    },
+    "contact_persons": [
+      {
+        "name": "Philipp Staufenberger",
+        "position": "Head of Global Sales",
+        "email": "phlpp.staufenberger@gmail.com",
+        "phone": "01782946016",
+        "department": "",
+        "specialization": "",
+        "id": "1753053141343"
+      },
+      {
+        "name": "Andre Rossnagel",
+        "position": "Geschäftsführer",
+        "email": "info@protexium.de",
+        "phone": "091292945775",
+        "department": "Geschäftsführung",
+        "specialization": "",
+        "id": "1753053164936"
+      }
+    ],
+    "behavior_settings": {
+      "tone": "Professionell",
+      "response_length": "Mittel",
+      "formality": "Sie (förmlich)",
+      "language": "Deutsch",
+      "custom_instructions": ""
+    },
+    "deployment_config": {},
+    "manual_text": ""
+  }
+}

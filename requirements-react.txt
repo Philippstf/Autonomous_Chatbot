@@ -1,0 +1,21 @@
+# React-based Chatbot Platform Requirements
+# Zusätzliche Dependencies für FastAPI Backend
+
+# Existing dependencies from requirements.txt
+-r requirements.txt
+
+# FastAPI & Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# CORS & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# WebSocket Support
+websockets>=12.0
+
+# Additional Utilities
+aiofiles>=23.2.1
+jinja2>=3.1.2

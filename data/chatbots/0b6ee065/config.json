@@ -1,0 +1,67 @@
+{
+  "id": "0b6ee065",
+  "name": "Webseite_Test",
+  "description": "",
+  "website_url": "https://protexium.de/",
+  "documents": [],
+  "created_at": "2025-07-21T00:57:00.583071",
+  "branding": {
+    "primary_color": "#1f3a93",
+    "secondary_color": "#34495e",
+    "accent_color": "#e74c3c",
+    "logo_url": null,
+    "welcome_message": "asdasda",
+    "company_info": {
+      "company_name": "Protexium Security GmbH",
+      "industry": "",
+      "email": "info@protexium.de",
+      "phone": "+4991292945775",
+      "website": "",
+      "address": {
+        "street": "Untere Rathausgasse 10",
+        "zip_code": "90530",
+        "city": "Wendelstein",
+        "country": "Deutschland"
+      },
+      "business_hours": {},
+      "social_media": {
+        "linkedin": "",
+        "facebook": "",
+        "instagram": "",
+        "twitter": ""
+      }
+    },
+    "features": {
+      "email_capture_enabled": false,
+      "email_capture_config": {
+        "prompt": "Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen.",
+        "trigger_keywords": [
+          "preise",
+          "angebot",
+          "kontakt",
+          "beratung"
+        ],
+        "max_requests": 1,
+        "after_messages": 3
+      },
+      "contact_persons_enabled": false,
+      "behavior_settings": {
+        "tone": "Professionell",
+        "response_length": "Mittel",
+        "formality": "Sie (förmlich)",
+        "language": "Deutsch",
+        "custom_instructions": ""
+      }
+    },
+    "contact_persons": [],
+    "behavior_settings": {
+      "tone": "Professionell",
+      "response_length": "Mittel",
+      "formality": "Sie (förmlich)",
+      "language": "Deutsch",
+      "custom_instructions": ""
+    },
+    "deployment_config": {},
+    "manual_text": ""
+  }
+}

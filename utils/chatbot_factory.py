@@ -3,7 +3,10 @@
 import os
 import json
 import uuid
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .multi_source_rag import MultiSourceRAG
 from pathlib import Path
 from datetime import datetime
 import streamlit as st
@@ -187,9 +190,11 @@ class ChatbotFactory:
                 progress_callback("Erstelle Wissensbasis...", 0.2)
             
             # Verarbeite alle Datenquellen
+            manual_text = extended_config.get("manual_text", "") if extended_config else ""
             success = rag_system.process_multiple_sources(
                 website_url=website_url,
                 document_chunks=document_chunks,
+                manual_text=manual_text,
                 progress_callback=progress_callback
             )
             
@@ -296,6 +301,26 @@ class ChatbotFactory:
     def chatbot_exists(self, chatbot_id: str) -> bool:
         """Prüft ob Chatbot existiert"""
         return chatbot_id in self.registry["chatbots"]
+    
+    def get_chatbot(self, chatbot_id: str) -> Optional['MultiSourceRAG']:
+        """Lädt und gibt ein RAG-System für einen Chatbot zurück"""
+        try:
+            # Prüfe ob Chatbot in Registry existiert
+            if not self.chatbot_exists(chatbot_id):
+                return None
+            
+            # Erstelle RAG-System
+            rag_system = MultiSourceRAG(chatbot_id)
+            
+            # Prüfe ob RAG-System initialisiert ist
+            if rag_system.index_file.exists() and rag_system.metadata_file.exists():
+                return rag_system
+            else:
+                return None
+                
+        except Exception as e:
+            print(f"Fehler beim Laden des Chatbots {chatbot_id}: {e}")
+            return None
     
     def get_chatbot_url(self, chatbot_id: str) -> str:
         """Gibt die URL für einen Chatbot zurück"""

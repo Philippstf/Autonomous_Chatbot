@@ -42,6 +42,7 @@ class MultiSourceRAG:
     def process_multiple_sources(self, 
                                 website_url: Optional[str] = None,
                                 document_chunks: Optional[List[Dict]] = None,
+                                manual_text: Optional[str] = None,
                                 progress_callback=None) -> bool:
         """
         Verarbeitet multiple Datenquellen zu einem einheitlichen RAG-System
@@ -82,6 +83,18 @@ class MultiSourceRAG:
                 if progress_callback:
                     progress_callback(f"Dokumente hinzugefügt: {len(document_chunks)} Chunks", 0.6)
             
+            # 3. Manueller Text verarbeiten (falls vorhanden)
+            if manual_text and manual_text.strip():
+                if progress_callback:
+                    progress_callback("Verarbeite manuellen Text...", 0.65)
+                
+                # Text in Chunks aufteilen
+                manual_chunks = self._split_text_into_chunks(manual_text)
+                all_chunks.extend(manual_chunks)
+                
+                if progress_callback:
+                    progress_callback(f"Manueller Text hinzugefügt: {len(manual_chunks)} Chunks", 0.7)
+            
             if not all_chunks:
                 st.error("Keine Daten zum Verarbeiten gefunden!")
                 return False
@@ -104,284 +117,106 @@ class MultiSourceRAG:
             st.error(f"Fehler bei der Datenverarbeitung: {str(e)}")
             return False
     
-    def _process_website(self, url: str) -> List[Dict]:
-        """Verarbeitet Website-URL automatisch mit Sitemap-Erkennung"""
-        try:
-            # Import functions directly instead of from scrape_to_chunks
-            from bs4 import BeautifulSoup
-            import re
-            from playwright.sync_api import sync_playwright
-            import requests
-            import xml.etree.ElementTree as ET
-            from urllib.parse import urljoin, urlparse
-            
-            # Define text extraction and chunking functions locally
-            def extract_text(html):
-                soup = BeautifulSoup(html, "html.parser")
-                main = soup.find("main") or soup.body or soup
-                
-                for tag in main(["script", "style", "nav", "footer", "header", "form", "aside"]):
-                    tag.decompose()
-                
-                text = main.get_text(separator="\n", strip=True)
-                lines = text.splitlines()
-                lines = [line.strip() for line in lines if line.strip()]
-                lines = [line for line in lines if not re.match(r"\[.*?\]|\bClose\b|^×$", line)]
-                return "\n".join(lines)
-            
-            def chunk_text(text: str, max_len=500, min_len=50):  # Reduzierte min_len
-                # Fallback: Wenn keine Sätze gefunden werden, nach Absätzen teilen
-                if not re.search(r"[.!?]", text):
-                    paragraphs = text.split('\n\n')
-                    chunks = [p.strip() for p in paragraphs if len(p.strip()) >= min_len]
-                    return chunks
-                
-                sentences = re.split(r"(?<=[.!?])\s+", text)
-                chunks = []
-                current = ""
+    def _split_text_into_chunks(self, text: str) -> List[Dict]:
+        """Teilt Text in Chunks für das RAG-System auf"""
+        chunks = []
+        
+        # Teile Text in Absätze
+        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+        
+        for i, paragraph in enumerate(paragraphs):
+            # Wenn Absatz zu lang, weiter aufteilen
+            if len(paragraph) > 1000:
+                sentences = [s.strip() for s in paragraph.split('.') if s.strip()]
+                current_chunk = ""
                 
                 for sentence in sentences:
-                    if len(current) + len(sentence) <= max_len:
-                        current += " " + sentence
+                    if len(current_chunk + sentence) < 1000:
+                        current_chunk += sentence + ". "
                     else:
-                        if len(current.strip()) >= min_len:
-                            chunks.append(current.strip())
-                        current = sentence
-                
-                if len(current.strip()) >= min_len:
-                    chunks.append(current.strip())
-                
-                # Fallback: Falls keine Chunks, ganzen Text als einen Chunk nehmen
-                if not chunks and len(text.strip()) >= min_len:
-                    chunks.append(text.strip())
-                
-                return chunks
-            
-            chunks = []
-            processed_urls = set()
-            
-            # 1. URLs aus der Website sammeln
-            urls_to_process = self._discover_website_urls(url)
-            
-            if not urls_to_process:
-                # Fallback: Nur die Hauptseite verarbeiten
-                urls_to_process = [url]
-            
-            st.info(f"🔍 Gefunden: {len(urls_to_process)} URLs zum Verarbeiten")
-            
-            # 2. URLs verarbeiten
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page()
-                
-                for i, page_url in enumerate(urls_to_process[:20]):  # Max 20 Seiten
-                    if page_url in processed_urls:
-                        continue
-                        
-                    try:
-                        page.goto(page_url, timeout=15000)
-                        html = page.content()
-                        text = extract_text(html)
-                        
-                        if len(text.strip()) < 50:  # Reduzierte Mindestlänge
-                            st.warning(f"⚠️ Seite {page_url} zu kurz: {len(text.strip())} Zeichen")
-                            continue
-                        
-                        st.info(f"📄 Text extrahiert von {page_url}: {len(text.strip())} Zeichen")
-                        text_chunks = chunk_text(text)
-                        st.info(f"📝 Chunks erstellt: {len(text_chunks)} aus {page_url}")
-                        processed_urls.add(page_url)
-                        
-                        # Erstelle strukturierte Chunks
-                        for j, chunk in enumerate(text_chunks):
-                            from urllib.parse import urlparse
+                        if current_chunk:
                             chunks.append({
-                                "source_type": "website",
-                                "source_name": urlparse(url).netloc,
-                                "page_title": page_url.split('/')[-1] or "homepage",
-                                "chunk_index": f"{i}-{j}",
-                                "text": chunk,
+                                "text": current_chunk.strip(),
+                                "source_type": "manual_text",
+                                "source_name": "Manueller Text",
+                                "chunk_index": f"manual-{len(chunks)}",
                                 "metadata": {
-                                    "url": page_url,
-                                    "page_number": i + 1,
-                                    "total_pages": min(len(urls_to_process), 20),
-                                    "chunk_count": len(text_chunks)
+                                    "source": "manual_input",
+                                    "paragraph": i + 1
                                 }
                             })
-                        
-                        # Progress Update
-                        if i % 5 == 0:
-                            st.info(f"📄 Verarbeitet: {i+1}/{min(len(urls_to_process), 20)} Seiten")
-                            
-                    except Exception as page_error:
-                        st.warning(f"⚠️ Fehler bei {page_url}: {str(page_error)}")
-                        continue
+                        current_chunk = sentence + ". "
                 
-                browser.close()
+                if current_chunk:
+                    chunks.append({
+                        "text": current_chunk.strip(),
+                        "source_type": "manual_text", 
+                        "source_name": "Manueller Text",
+                        "chunk_index": f"manual-{len(chunks)}",
+                        "metadata": {
+                            "source": "manual_input",
+                            "paragraph": i + 1
+                        }
+                    })
+            else:
+                chunks.append({
+                    "text": paragraph,
+                    "source_type": "manual_text",
+                    "source_name": "Manueller Text", 
+                    "chunk_index": f"manual-{len(chunks)}",
+                    "metadata": {
+                        "source": "manual_input",
+                        "paragraph": i + 1
+                    }
+                })
+        
+        return chunks
+    
+    def _process_website(self, url: str) -> List[Dict]:
+        """Verarbeitet Website-URL mit einfachem, stabilerem Scraping"""
+        try:
+            print(f"DEBUG: Starting website processing for {url}")
+            import requests
+            from bs4 import BeautifulSoup
             
-            st.success(f"✅ Website-Scraping abgeschlossen: {len(chunks)} Chunks aus {len(processed_urls)} Seiten")
+            # Request mit Timeout
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(url, timeout=15, headers=headers)
+            response.raise_for_status()
+            
+            # Parse HTML
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Remove unwanted elements
+            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'form', 'aside', 'noscript']):
+                element.decompose()
+            
+            # Extract text
+            text = soup.get_text(separator='\n', strip=True)
+            lines = [line.strip() for line in text.splitlines() if line.strip()]
+            clean_text = '\n'.join(lines)
+            
+            print(f"DEBUG: Extracted {len(clean_text)} characters")
+            
+            # Split into chunks using existing method
+            chunks = []
+            if clean_text:
+                text_chunks = self._split_text_into_chunks(clean_text)
+                for chunk in text_chunks:
+                    chunk['source_type'] = 'website'
+                    chunk['source_name'] = url
+                    chunk['metadata']['url'] = url
+                chunks.extend(text_chunks)
+            
+            print(f"DEBUG: Created {len(chunks)} chunks from website")
             return chunks
             
         except Exception as e:
-            st.error(f"Fehler beim Website-Scraping: {str(e)}")
+            print(f"ERROR: Website processing failed: {e}")
             return []
-    
-    def _discover_website_urls(self, base_url: str) -> List[str]:
-        """Entdeckt URLs einer Website über Sitemap und Crawling"""
-        from urllib.parse import urlparse
-        urls = set()
-        domain = urlparse(base_url).netloc
-        
-        try:
-            # 1. Versuche Sitemap zu finden
-            sitemap_urls = self._find_sitemap_urls(base_url)
-            urls.update(sitemap_urls)
-            
-            # 2. Falls keine Sitemap: Crawle die Hauptseite
-            if not sitemap_urls:
-                crawled_urls = self._crawl_main_page(base_url)
-                urls.update(crawled_urls)
-            
-            # 3. Filtere und sortiere URLs
-            filtered_urls = []
-            for url in urls:
-                from urllib.parse import urlparse
-                parsed = urlparse(url)
-                if (parsed.netloc == domain and 
-                    not any(ext in url.lower() for ext in ['.pdf', '.jpg', '.png', '.gif', '.css', '.js']) and
-                    not any(word in url.lower() for word in ['admin', 'login', 'api', 'cdn'])):
-                    filtered_urls.append(url)
-            
-            return list(set(filtered_urls))[:50]  # Max 50 URLs
-            
-        except Exception as e:
-            st.warning(f"⚠️ URL-Discovery-Fehler: {str(e)}")
-            return [base_url]  # Fallback zur Hauptseite
-    
-    def _find_sitemap_urls(self, base_url: str) -> List[str]:
-        """Findet URLs über Sitemap.xml"""
-        from urllib.parse import urlparse
-        urls = []
-        domain = urlparse(base_url).scheme + "://" + urlparse(base_url).netloc
-        
-        # Mögliche Sitemap-Pfade
-        sitemap_paths = [
-            '/sitemap.xml',
-            '/sitemap_index.xml', 
-            '/sitemap/sitemap.xml',
-            '/sitemaps.xml',
-            '/robots.txt'  # Für Sitemap-Referenzen
-        ]
-        
-        for path in sitemap_paths:
-            try:
-                sitemap_url = domain + path
-                response = requests.get(sitemap_url, timeout=10)
-                
-                if response.status_code == 200:
-                    if path == '/robots.txt':
-                        # Parse robots.txt für Sitemap-Referenzen
-                        for line in response.text.split('\n'):
-                            if line.lower().startswith('sitemap:'):
-                                sitemap_ref = line.split(':', 1)[1].strip()
-                                urls.extend(self._parse_sitemap(sitemap_ref))
-                    else:
-                        # Parse XML Sitemap
-                        urls.extend(self._parse_sitemap(sitemap_url, response.text))
-                        
-                    if urls:  # Erste erfolgreiche Sitemap verwenden
-                        break
-                        
-            except Exception:
-                continue
-        
-        return urls
-    
-    def _parse_sitemap(self, sitemap_url: str, content: str = None) -> List[str]:
-        """Parst XML-Sitemap und extrahiert URLs"""
-        urls = []
-        
-        try:
-            if content is None:
-                response = requests.get(sitemap_url, timeout=10)
-                content = response.text
-            
-            # Parse XML
-            root = ET.fromstring(content)
-            
-            # Handle different sitemap formats
-            namespaces = {
-                'sitemap': 'http://www.sitemaps.org/schemas/sitemap/0.9',
-                'news': 'http://www.google.com/schemas/sitemap-news/0.9',
-                'image': 'http://www.google.com/schemas/sitemap-image/1.1'
-            }
-            
-            # Standard sitemap URLs
-            for url_elem in root.findall('.//sitemap:url', namespaces):
-                loc = url_elem.find('sitemap:loc', namespaces)
-                if loc is not None and loc.text:
-                    urls.append(loc.text)
-            
-            # Sitemap index (references to other sitemaps)  
-            for sitemap_elem in root.findall('.//sitemap:sitemap', namespaces):
-                loc = sitemap_elem.find('sitemap:loc', namespaces)
-                if loc is not None and loc.text:
-                    # Recursively parse sub-sitemaps
-                    sub_urls = self._parse_sitemap(loc.text)
-                    urls.extend(sub_urls)
-            
-            # Fallback: Try without namespace
-            if not urls:
-                for url_elem in root.findall('.//url'):
-                    loc = url_elem.find('loc')
-                    if loc is not None and loc.text:
-                        urls.append(loc.text)
-                        
-        except Exception as e:
-            st.warning(f"⚠️ Sitemap-Parse-Fehler: {str(e)}")
-        
-        return urls[:100]  # Limit to 100 URLs per sitemap
-    
-    def _crawl_main_page(self, base_url: str) -> List[str]:
-        """Crawlt die Hauptseite nach Links"""
-        from urllib.parse import urlparse
-        urls = []
-        domain = urlparse(base_url).netloc
-        
-        try:
-            from playwright.sync_api import sync_playwright
-            
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page()
-                page.goto(base_url, timeout=15000)
-                
-                # Alle Links sammeln
-                links = page.query_selector_all('a[href]')
-                
-                for link in links:
-                    href = link.get_attribute('href')
-                    if href:
-                        # Absolute URL erstellen
-                        if href.startswith('/'):
-                            from urllib.parse import urlparse
-                            full_url = f"{urlparse(base_url).scheme}://{domain}{href}"
-                        elif href.startswith('http'):
-                            full_url = href
-                        else:
-                            continue
-                            
-                        # Nur Links der gleichen Domain
-                        from urllib.parse import urlparse
-                        if urlparse(full_url).netloc == domain:
-                            urls.append(full_url)
-                
-                browser.close()
-                
-        except Exception as e:
-            st.warning(f"⚠️ Crawling-Fehler: {str(e)}")
-        
-        return list(set(urls))[:30]  # Max 30 URLs
     
     def _save_chunks(self, chunks: List[Dict]):
         """Speichert alle Chunks in JSON-Datei"""
@@ -435,11 +270,25 @@ class MultiSourceRAG:
     
     def _get_embedding(self, text: str) -> List[float]:
         """Erstellt Embedding für Text"""
-        response = self.embed_client.embeddings.create(
-            model=self.embed_model,
-            input=text
-        )
-        return response.data[0].embedding
+        import time
+        max_retries = 3
+        retry_delay = 1
+        
+        for attempt in range(max_retries):
+            try:
+                response = self.embed_client.embeddings.create(
+                    model=self.embed_model,
+                    input=text,
+                    timeout=30  # 30 Sekunden Timeout
+                )
+                return response.data[0].embedding
+            except Exception as e:
+                print(f"Embedding-Fehler (Versuch {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    raise Exception(f"Embedding fehlgeschlagen nach {max_retries} Versuchen: {e}")
     
     def load_rag_system(self) -> tuple[faiss.Index, List[Dict]]:
         """Lädt FAISS-Index und Metadaten für Chatbot"""
@@ -505,6 +354,92 @@ class MultiSourceRAG:
             
         except Exception as e:
             return {"error": str(e)}
+    
+    def get_response(self, query: str, conversation_id: Optional[str] = None) -> Dict:
+        """Generiert Antwort auf Benutzeranfrage mit RAG"""
+        try:
+            # Hole relevante Chunks
+            relevant_chunks = self.retrieve_chunks(query, top_k=5)
+            
+            if not relevant_chunks:
+                return {
+                    "response": "Entschuldigung, ich konnte keine relevanten Informationen zu Ihrer Frage finden.",
+                    "sources": [],
+                    "conversation_id": conversation_id or str(uuid.uuid4())
+                }
+            
+            # Erstelle Kontext aus Chunks
+            context = "\n\n".join([
+                f"Quelle: {chunk.get('source_name', 'Unbekannt')}\n{chunk['text']}"
+                for chunk in relevant_chunks
+            ])
+            
+            # LLM-Aufruf mit OpenRouter
+            router_api_key = os.getenv("OPENROUTER_API_KEY")
+            if not router_api_key:
+                return {
+                    "response": "Fehler: OpenRouter API-Key nicht konfiguriert.",
+                    "sources": [],
+                    "conversation_id": conversation_id or str(uuid.uuid4())
+                }
+            
+            router_client = OpenAI(
+                api_key=router_api_key,
+                base_url="https://openrouter.ai/api/v1"
+            )
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""Du bist ein hilfsreicher Assistent. Beantworte die Frage basierend auf dem gegebenen Kontext.
+                    
+Kontext:
+{context}
+
+Anweisungen:
+- Antworte nur basierend auf den bereitgestellten Informationen
+- Wenn die Information nicht im Kontext steht, sage das ehrlich
+- Bleibe freundlich und professionell
+- Antworte auf Deutsch"""
+                },
+                {
+                    "role": "user", 
+                    "content": query
+                }
+            ]
+            
+            response = router_client.chat.completions.create(
+                model="mistralai/mistral-small-3.2-24b-instruct:free",
+                messages=messages,
+                temperature=0.2,
+                max_tokens=512
+            )
+            
+            answer = response.choices[0].message.content.strip()
+            
+            # Bereite Quellen für Frontend auf
+            sources = [
+                {
+                    "title": chunk.get("source_name", "Unbekannte Quelle"),
+                    "type": chunk.get("source_type", "unknown"),
+                    "url": chunk.get("source_url", ""),
+                    "snippet": chunk["text"][:200] + "..." if len(chunk["text"]) > 200 else chunk["text"]
+                }
+                for chunk in relevant_chunks
+            ]
+            
+            return {
+                "response": answer,
+                "sources": sources,
+                "conversation_id": conversation_id or str(uuid.uuid4())
+            }
+            
+        except Exception as e:
+            return {
+                "response": f"Entschuldigung, es ist ein Fehler aufgetreten: {str(e)}",
+                "sources": [],
+                "conversation_id": conversation_id or str(uuid.uuid4())
+            }
 
 def create_chatbot_id() -> str:
     """Erstellt eine eindeutige Chatbot-ID"""
