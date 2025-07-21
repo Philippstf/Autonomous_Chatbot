@@ -29,7 +29,8 @@ def main():
     # Check if we're in the right directory
     if not os.path.exists("react-frontend"):
         print("❌ react-frontend directory not found!")
-        sys.exit(1)
+        print("⚠️ Continuing without React build (using backend only)")
+        return
     
     # Install dependencies
     print("📦 Installing dependencies...")
