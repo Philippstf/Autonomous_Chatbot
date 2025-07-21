@@ -559,12 +559,69 @@ async def get_analytics_overview():
 
 @app.get("/")
 async def serve_react_app():
-    """Serve React app"""
+    """Serve React app or API welcome page"""
     index_path = static_path / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
     else:
-        return {"message": "React frontend not built. Run 'npm run build' in react-frontend directory."}
+        # Return HTML welcome page for API-only deployment
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>VuBot Chatbot Platform API</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+                .header { text-align: center; margin-bottom: 40px; }
+                .endpoint { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+                .method { color: #007acc; font-weight: bold; }
+                a { color: #007acc; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🤖 VuBot Chatbot Platform API</h1>
+                <p>FastAPI Backend - Successfully deployed on Railway!</p>
+            </div>
+            
+            <h2>📋 Available Endpoints:</h2>
+            
+            <div class="endpoint">
+                <span class="method">GET</span> <a href="/docs">/docs</a> - Interactive API Documentation (Swagger)
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">GET</span> <a href="/api/health">/api/health</a> - Health Check
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">GET</span> <a href="/api/chatbots">/api/chatbots</a> - List All Chatbots
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">POST</span> /api/chatbots - Create New Chatbot
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">POST</span> /api/chat/{chatbot_id} - Chat with Chatbot
+            </div>
+            
+            <h2>🚀 Next Steps:</h2>
+            <ul>
+                <li>Visit <a href="/docs">/docs</a> for full API documentation</li>
+                <li>Use the API endpoints to create and manage chatbots</li>
+                <li>Deploy React frontend separately (e.g., Vercel, Netlify) for full UI</li>
+            </ul>
+            
+            <p style="text-align: center; margin-top: 40px; color: #666;">
+                Backend deployed successfully on Railway 🎉
+            </p>
+        </body>
+        </html>
+        """
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=html_content)
 
 @app.get("/chatbot/{chatbot_id}")
 async def serve_chatbot_page(chatbot_id: str):
