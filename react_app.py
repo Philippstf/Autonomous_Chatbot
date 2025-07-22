@@ -24,8 +24,9 @@ from utils.chatbot_factory import ChatbotFactory, ChatbotConfig
 from utils.multi_source_rag import MultiSourceRAG
 from utils.pdf_processor import document_processor
 
-# Import Supabase authentication
+# Import Supabase authentication and storage
 from utils.supabase_auth import get_current_user
+from utils.supabase_storage import SupabaseStorage
 
 # Load environment variables
 load_dotenv()
@@ -73,6 +74,7 @@ class ProgressUpdate(BaseModel):
 # ─── Global Variables ────────────────────────────────────────────────────────
 
 chatbot_factory = None
+supabase_storage = None
 active_chats: Dict[str, MultiSourceRAG] = {}
 creation_progress: Dict[str, Dict] = {}
 
@@ -81,30 +83,17 @@ creation_progress: Dict[str, Dict] = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
-    global chatbot_factory
+    global chatbot_factory, supabase_storage
     
     # Startup
     logger.info("🚀 Starting Chatbot Platform API...")
     
-    # Initialize chatbot factory
+    # Initialize systems
     chatbot_factory = ChatbotFactory()
+    supabase_storage = SupabaseStorage()
     
-    # Load existing chatbots into memory
-    chatbots = chatbot_factory.get_all_chatbots()
-    for chatbot in chatbots:
-        try:
-            config = chatbot["config"]
-            rag_system = MultiSourceRAG(chatbot_id=config.id)
-            # Check if chatbot has been initialized (has index file)
-            if rag_system.index_file.exists() and rag_system.metadata_file.exists():
-                active_chats[config.id] = rag_system
-                logger.info(f"✅ Loaded chatbot: {config.name} ({config.id})")
-            else:
-                logger.info(f"⚠️ Chatbot {config.name} ({config.id}) not initialized yet")
-        except Exception as e:
-            logger.error(f"❌ Failed to load chatbot {config.id}: {e}")
-    
-    logger.info(f"✅ Loaded {len(active_chats)} active chatbots")
+    # Initialize active chats dictionary (will be loaded per-user as needed)
+    logger.info("✅ Supabase storage initialized - chatbots will be loaded per-user")
     
     yield
     
@@ -179,36 +168,48 @@ async def health_check():
 async def get_all_chatbots(current_user: dict = Depends(get_current_user)):
     """Get all chatbots for current user"""
     try:
-        # Get all chatbots and filter by user
-        all_chatbots = chatbot_factory.get_all_chatbots()
-        user_chatbots = []
         user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
         
-        for chatbot in all_chatbots:
+        # Get user-specific chatbots from Supabase
+        user_chatbots = supabase_storage.get_user_chatbots(user_id)
+        
+        # Add runtime status
+        for chatbot in user_chatbots:
             config = chatbot["config"]
-            # Filter by user_id - only show user's own chatbots
-            # For now, show all chatbots until we implement user_id in chatbot_factory
             chatbot["runtime_status"] = {
                 "loaded": config.id in active_chats,
                 "chat_url": f"/api/chat/{config.id}",
                 "frontend_url": f"/chatbot/{config.id}"
             }
-            user_chatbots.append(chatbot)
+        
+        # Count active chats for this user
+        user_active_count = sum(1 for bot in user_chatbots if bot["config"].id in active_chats)
         
         return {
             "chatbots": user_chatbots,
             "total": len(user_chatbots),
-            "active": len(active_chats)
+            "active": user_active_count
         }
     except Exception as e:
         logger.error(f"Failed to get chatbots: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/chatbots/{chatbot_id}")
-async def get_chatbot(chatbot_id: str):
-    """Get specific chatbot"""
+async def get_chatbot(chatbot_id: str, current_user: dict = Depends(get_current_user)):
+    """Get specific chatbot for current user"""
     try:
-        chatbot = chatbot_factory.get_chatbot(chatbot_id)
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+        
+        # Verify user owns this chatbot
+        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+        
+        # Get chatbot from Supabase
+        chatbot = supabase_storage.get_chatbot_config(user_id, chatbot_id)
         if not chatbot:
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
@@ -230,9 +231,10 @@ async def get_chatbot(chatbot_id: str):
 async def create_chatbot(
     background_tasks: BackgroundTasks,
     request: str = Form(...),
-    files: Optional[List[UploadFile]] = File(None)
+    files: Optional[List[UploadFile]] = File(None),
+    current_user: dict = Depends(get_current_user)
 ):
-    """Create new chatbot"""
+    """Create new chatbot for current user"""
     try:
         # Parse and validate request data
         try:
@@ -274,10 +276,15 @@ async def create_chatbot(
                         "size": len(content)
                     })
         
-        # Start background creation task
+        # Start background creation task with user_id
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+            
         background_tasks.add_task(
             create_chatbot_background,
             creation_id,
+            user_id,
             chatbot_request,
             uploaded_file_paths
         )
@@ -295,10 +302,11 @@ async def create_chatbot(
 
 async def create_chatbot_background(
     creation_id: str,
+    user_id: str,
     request: CreateChatbotRequest,
     uploaded_file_paths: List[Dict]
 ):
-    """Background task for chatbot creation"""
+    """Background task for user-specific chatbot creation"""
     try:
         progress_callback = await progress_callback_factory(creation_id)
         
@@ -356,8 +364,17 @@ async def create_chatbot_background(
             progress_callback=progress_callback
         )
         
-        # Load into active chats
+        # Store chatbot config in Supabase for user
         if chatbot_id:
+            progress_callback("Saving to user account...", 0.8)
+            
+            # Get the created chatbot config
+            chatbot_config = chatbot_factory.load_chatbot_config(chatbot_id)
+            if chatbot_config:
+                # Store in Supabase with user_id
+                supabase_storage.create_chatbot_config(user_id, chatbot_config)
+                logger.info(f"✅ Stored chatbot {chatbot_id} for user {user_id}")
+            
             progress_callback("Initializing chat system...", 0.9)
             
             rag_system = MultiSourceRAG(chatbot_id=chatbot_id)
@@ -372,7 +389,8 @@ async def create_chatbot_background(
                 "timestamp": datetime.now().isoformat(),
                 "status": "completed",
                 "chatbot_id": chatbot_id,
-                "chatbot_url": f"/chatbot/{chatbot_id}"
+                "chatbot_url": f"/chatbot/{chatbot_id}",
+                "user_id": user_id
             }
         
         # Cleanup temp files
