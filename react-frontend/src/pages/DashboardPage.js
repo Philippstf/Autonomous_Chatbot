@@ -164,7 +164,7 @@ const DashboardPage = () => {
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ 
             fontWeight: 700, 
-            color: '#60a5fa',
+            color: '#1e3a8a',
             mb: 1
           }}>
             Willkommen zurück, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}! 👋

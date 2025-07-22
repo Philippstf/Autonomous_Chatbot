@@ -24,9 +24,8 @@ from utils.chatbot_factory import ChatbotFactory, ChatbotConfig
 from utils.multi_source_rag import MultiSourceRAG
 from utils.pdf_processor import document_processor
 
-# Import authentication
-from utils.auth import get_current_user
-from routes.auth import router as auth_router
+# Import Supabase authentication
+from utils.supabase_auth import get_current_user
 
 # Load environment variables
 load_dotenv()
@@ -122,9 +121,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Include authentication routes
-app.include_router(auth_router)
-
 # CORS middleware for React frontend
 app.add_middleware(
     CORSMiddleware,
@@ -178,17 +174,18 @@ async def health_check():
 # ─── Chatbot Management Endpoints ────────────────────────────────────────────
 
 @app.get("/api/chatbots")
-async def get_all_chatbots():
-    """Get all chatbots - temporarily public"""
+async def get_all_chatbots(current_user: dict = Depends(get_current_user)):
+    """Get all chatbots for current user"""
     try:
         # Get all chatbots and filter by user
         all_chatbots = chatbot_factory.get_all_chatbots()
         user_chatbots = []
+        user_id = current_user.get("id")
         
         for chatbot in all_chatbots:
             config = chatbot["config"]
-            # Filter by user_id (for now, allow all until we update chatbot_factory)
-            # TODO: Add user_id filtering when chatbot_factory supports it
+            # Filter by user_id - only show user's own chatbots
+            # For now, show all chatbots until we implement user_id in chatbot_factory
             chatbot["runtime_status"] = {
                 "loaded": config.id in active_chats,
                 "chat_url": f"/api/chat/{config.id}",
