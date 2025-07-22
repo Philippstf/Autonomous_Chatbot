@@ -295,6 +295,11 @@ async def create_chatbot(
         if not user_id:
             raise HTTPException(status_code=401, detail="User ID not found")
             
+        # Debug logging für user authentication
+        logger.info(f"🔍 Creating chatbot for user: {user_id}")
+        logger.info(f"🔍 User email: {current_user.get('email', 'NO_EMAIL')}")
+        logger.info(f"🔍 User details: {current_user}")
+            
         background_tasks.add_task(
             create_chatbot_background,
             creation_id,
