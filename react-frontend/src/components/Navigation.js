@@ -12,25 +12,28 @@ import {
   Divider,
   useTheme,
   IconButton,
+  Button,
 } from '@mui/material';
 import {
-  Home as HomeIcon,
+  Dashboard as DashboardIcon,
   Add as AddIcon,
   SmartToy as SmartToyIcon,
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
   Close as CloseIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
 const drawerWidth = 240;
 
 const navigationItems = [
   {
     text: 'Dashboard',
-    icon: <HomeIcon />,
-    path: '/',
+    icon: <DashboardIcon />,
+    path: '/dashboard',
     description: 'Overview & Analytics'
   },
   {
@@ -72,9 +75,19 @@ function Navigation({ open, onToggle, isMobile }) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const { signOut, user } = useAuth();
 
   const handleNavigation = (path) => {
     navigate(path);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const isActivePath = (path) => {
@@ -217,6 +230,43 @@ function Navigation({ open, onToggle, isMobile }) {
             renderNavigationItem(item, navigationItems.length + index)
           )}
         </List>
+        
+        {/* User Info & Logout */}
+        <Box sx={{ px: 2, mt: 2 }}>
+          <Typography variant="body2" sx={{ 
+            color: 'rgba(255, 255, 255, 0.7)', 
+            mb: 1,
+            fontSize: '0.8rem'
+          }}>
+            Angemeldet als:
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: 'white', 
+            mb: 2,
+            fontWeight: 500,
+            fontSize: '0.9rem'
+          }}>
+            {user?.email}
+          </Typography>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontSize: '0.8rem',
+              '&:hover': {
+                borderColor: 'rgba(255, 255, 255, 0.5)',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              }
+            }}
+          >
+            Abmelden
+          </Button>
+        </Box>
       </Box>
 
       {/* Version Info */}

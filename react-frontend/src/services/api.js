@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from '../config/supabase';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -9,10 +10,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
+// Request interceptor - add Supabase auth token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
+    
+    // Add Supabase auth token to requests
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+    
     return config;
   },
   (error) => {

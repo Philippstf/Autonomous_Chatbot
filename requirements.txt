@@ -27,3 +27,8 @@ postgrest>=0.13.0
 # Utilities
 python-dotenv>=1.0.0
 python-multipart==0.0.6
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-jwt>=4.0.0
