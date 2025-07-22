@@ -25,28 +25,50 @@ class SupabaseStorage:
     def create_chatbot_config(self, user_id: str, config: ChatbotConfig) -> str:
         """Create new chatbot configuration for specific user"""
         try:
-            # Prepare config data for storage
+            # Helper function to safely serialize objects to JSON
+            def safe_serialize(obj):
+                """Safely convert objects to JSON-serializable format"""
+                if obj is None:
+                    return None
+                elif isinstance(obj, (str, int, float, bool)):
+                    return obj
+                elif isinstance(obj, (list, tuple)):
+                    return [safe_serialize(item) for item in obj]
+                elif isinstance(obj, dict):
+                    return {str(k): safe_serialize(v) for k, v in obj.items()}
+                elif hasattr(obj, '__dict__'):
+                    # Convert objects with __dict__ to dict
+                    return safe_serialize(obj.__dict__)
+                else:
+                    # Convert to string as fallback
+                    return str(obj)
+            
+            # Prepare config data for storage with safe serialization
             config_data = {
                 "id": config.id,
                 "name": config.name,
-                "description": config.description,
+                "description": config.description or "",
                 "website_url": getattr(config, 'website_url', None),
-                "branding": config.branding,
-                "extended_config": getattr(config, 'extended_config', {}),
+                "branding": safe_serialize(getattr(config, 'branding', {})),
+                "extended_config": safe_serialize(getattr(config, 'extended_config', {})),
+                "documents": safe_serialize(getattr(config, 'documents', [])),
                 "status": getattr(config, 'status', 'active'),
                 "created_at": datetime.now().isoformat()
             }
             
-            # Insert into Supabase
-            result = self.supabase.table('chatbot_configs').insert({
+            # Insert into Supabase with clean data
+            insert_data = {
                 "id": config.id,
                 "user_id": user_id,
                 "name": config.name,
-                "description": config.description,
-                "config_data": config_data,
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat()
-            }).execute()
+                "description": config.description or "",
+                "config_data": config_data
+            }
+            
+            # Log the data being inserted for debugging
+            logger.info(f"Inserting chatbot config: {config.name} (ID: {config.id})")
+            
+            result = self.supabase.table('chatbot_configs').insert(insert_data).execute()
             
             if result.data:
                 logger.info(f"✅ Created chatbot config {config.id} for user {user_id}")

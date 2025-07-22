@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getChatConfig, sendChatMessage, submitLead } from '../services/api';
+import ContactPersonModal from '../components/ContactPersonModal';
 
 function ChatbotPage() {
   const { id: chatbotId } = useParams();
@@ -46,6 +47,7 @@ function ChatbotPage() {
   const [emailCapturePrompt, setEmailCapturePrompt] = useState('');
   const [emailFormData, setEmailFormData] = useState({ email: '', name: '', phone: '', message: '' });
   const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [showContactPersons, setShowContactPersons] = useState(false);
   const messagesEndRef = useRef(null);
 
   const {
@@ -120,6 +122,11 @@ function ChatbotPage() {
         setShowEmailCapture(true);
         setEmailCapturePrompt(response.metadata.email_prompt || 'Möchten Sie weitere Informationen erhalten?');
       }
+      
+      // Check for contact persons trigger
+      if (response.metadata?.show_contact_persons && !showContactPersons) {
+        setShowContactPersons(true);
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       const errorMessage = {
@@ -187,6 +194,19 @@ function ChatbotPage() {
       id: Date.now().toString(),
       type: 'system',
       content: 'Kein Problem! Wenn Sie später Kontaktinformationen benötigen, fragen Sie einfach nach "Kontakt" oder "Angebot".',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, dismissalMessage]);
+  };
+
+  const handleContactPersonsClose = () => {
+    setShowContactPersons(false);
+    
+    // Add dismissal message to chat
+    const dismissalMessage = {
+      id: Date.now().toString(),
+      type: 'system',
+      content: 'Kein Problem! Falls Sie später einen direkten Ansprechpartner benötigen, fragen Sie einfach nach \"Kontakt\" oder \"Ansprechpartner\".',
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, dismissalMessage]);
@@ -720,6 +740,14 @@ function ChatbotPage() {
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* Contact Persons Modal */}
+      <ContactPersonModal
+        open={showContactPersons}
+        onClose={handleContactPersonsClose}
+        contactPersons={chatConfig?.contact_persons || []}
+        chatbotName={chatConfig?.name || 'Chatbot'}
+      />
 
     </Container>
   );

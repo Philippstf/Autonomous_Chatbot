@@ -528,9 +528,11 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             features = getattr(chatbot_config, 'branding', {}).get('features', {})
         
         email_capture_enabled = features.get('email_capture_enabled', False)
+        contact_persons_enabled = features.get('contact_persons_enabled', False)
         
         bot_response = response_data["response"]
         should_show_email_capture = False
+        should_show_contact_persons = False
         
         # Email capture logic - only if enabled and not already captured in this conversation
         if email_capture_enabled:
@@ -555,6 +557,34 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                 if keyword_triggered or message_count_triggered:
                     should_show_email_capture = True
         
+        # Contact persons logic - only if enabled, contact persons exist, and not already shown in this conversation
+        if contact_persons_enabled:
+            contact_persons = extended_config.get('contact_persons', [])
+            
+            if contact_persons:
+                # Check if contact persons already shown in this conversation
+                conversation_messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
+                contact_already_shown = any(
+                    msg.get('metadata', {}).get('contact_persons_shown', False) 
+                    for msg in conversation_messages 
+                    if msg.get('role') == 'assistant'
+                )
+                
+                if not contact_already_shown:
+                    # Check message count and trigger keywords for contact persons
+                    contact_config = features.get('contact_persons_config', {})
+                    contact_trigger_keywords = contact_config.get('trigger_keywords', 
+                        ['kontakt', 'ansprechpartner', 'beratung', 'hilfe', 'support', 'sprechen'])
+                    contact_after_messages = contact_config.get('after_messages', 5)
+                    
+                    # Check for trigger conditions
+                    user_message_lower = message.message.lower()
+                    contact_keyword_triggered = any(keyword.lower() in user_message_lower for keyword in contact_trigger_keywords)
+                    contact_message_count_triggered = len(conversation_messages) >= contact_after_messages * 2
+                    
+                    if contact_keyword_triggered or contact_message_count_triggered:
+                        should_show_contact_persons = True
+        
         # Save bot response to conversation history
         supabase_storage.save_conversation_message(
             user_id=owner_user_id,
@@ -565,6 +595,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             metadata={
                 "timestamp": datetime.now().isoformat(),
                 "email_capture_shown": should_show_email_capture,
+                "contact_persons_shown": should_show_contact_persons,
                 "sources": response_data.get("sources", [])
             }
         )
@@ -577,16 +608,25 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             timestamp=datetime.now()
         )
         
-        # Add email capture prompt if needed
+        # Add email capture and/or contact persons prompts if needed
+        metadata = {}
+        
         if should_show_email_capture:
             email_prompt = features.get('email_capture_config', {}).get('prompt', 
                 'Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen.')
-            
-            # Add metadata to indicate email capture should be shown
-            chat_response.metadata = {
+            metadata.update({
                 'show_email_capture': True,
                 'email_prompt': email_prompt
-            }
+            })
+        
+        if should_show_contact_persons:
+            metadata.update({
+                'show_contact_persons': True,
+                'contact_persons': extended_config.get('contact_persons', [])
+            })
+        
+        if metadata:
+            chat_response.metadata = metadata
         
         return chat_response
         

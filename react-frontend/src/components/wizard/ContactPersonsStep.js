@@ -10,8 +10,11 @@ import {
   FormControlLabel,
   Switch,
   IconButton,
+  Avatar,
+  Input,
+  Alert,
 } from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Add as AddIcon, CloudUpload, Person } from '@mui/icons-material';
 
 function ContactPersonsStep({ formData, updateFormData }) {
   const [newContact, setNewContact] = React.useState({
@@ -21,6 +24,8 @@ function ContactPersonsStep({ formData, updateFormData }) {
     phone: '',
     department: '',
     specialization: '',
+    profileImage: null,
+    profileImagePreview: null,
   });
 
   const handleContactPersonsToggle = (enabled) => {
@@ -47,6 +52,8 @@ function ContactPersonsStep({ formData, updateFormData }) {
         phone: '',
         department: '',
         specialization: '',
+        profileImage: null,
+        profileImagePreview: null,
       });
     }
   };
@@ -54,6 +61,34 @@ function ContactPersonsStep({ formData, updateFormData }) {
   const handleRemoveContact = (index) => {
     const updatedContacts = formData.contact_persons?.filter((_, i) => i !== index) || [];
     updateFormData({ contact_persons: updatedContacts });
+  };
+
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Bitte wählen Sie eine Bilddatei aus.');
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Die Datei ist zu groß. Maximale Größe: 2MB');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setNewContact({
+          ...newContact,
+          profileImage: file,
+          profileImagePreview: e.target.result,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -88,35 +123,52 @@ function ContactPersonsStep({ formData, updateFormData }) {
                 <Card key={index} sx={{ mb: 2 }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Box>
-                        <Typography variant="h6">
-                          👤 {contact.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {contact.position}
-                        </Typography>
-                        <Typography variant="body2">
-                          📧 {contact.email}
-                        </Typography>
-                        {contact.phone && (
-                          <Typography variant="body2">
-                            📞 {contact.phone}
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flex: 1 }}>
+                        {/* Profile Image */}
+                        <Avatar
+                          src={contact.profileImagePreview}
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            border: '2px solid #e5e7eb',
+                          }}
+                        >
+                          <Person sx={{ fontSize: '2rem' }} />
+                        </Avatar>
+                        
+                        {/* Contact Info */}
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {contact.name}
                           </Typography>
-                        )}
-                        {contact.department && (
-                          <Typography variant="body2">
-                            🏢 {contact.department}
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {contact.position}
                           </Typography>
-                        )}
-                        {contact.specialization && (
-                          <Typography variant="body2" sx={{ mt: 1 }}>
-                            {contact.specialization}
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            📧 {contact.email}
                           </Typography>
-                        )}
+                          {contact.phone && (
+                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                              📞 {contact.phone}
+                            </Typography>
+                          )}
+                          {contact.department && (
+                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                              🏢 {contact.department}
+                            </Typography>
+                          )}
+                          {contact.specialization && (
+                            <Typography variant="body2" sx={{ mt: 1, color: '#6b7280' }}>
+                              {contact.specialization}
+                            </Typography>
+                          )}
+                        </Box>
                       </Box>
+                      
                       <IconButton
                         onClick={() => handleRemoveContact(index)}
                         color="error"
+                        sx={{ ml: 2 }}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -135,6 +187,65 @@ function ContactPersonsStep({ formData, updateFormData }) {
               </Typography>
 
               <Grid container spacing={2}>
+                {/* Profile Image Upload */}
+                <Grid item xs={12}>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                      📸 Profilbild (optional)
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <Avatar
+                        src={newContact.profileImagePreview}
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          border: '2px solid #e5e7eb',
+                        }}
+                      >
+                        <Person sx={{ fontSize: '2.5rem' }} />
+                      </Avatar>
+                      
+                      <Box>
+                        <input
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          id="profile-image-upload"
+                          type="file"
+                          onChange={handleImageUpload}
+                        />
+                        <label htmlFor="profile-image-upload">
+                          <Button
+                            variant="outlined"
+                            component="span"
+                            startIcon={<CloudUpload />}
+                            sx={{ mr: 2 }}
+                          >
+                            Bild hochladen
+                          </Button>
+                        </label>
+                        
+                        {newContact.profileImage && (
+                          <Button
+                            variant="text"
+                            color="error"
+                            onClick={() => setNewContact({
+                              ...newContact,
+                              profileImage: null,
+                              profileImagePreview: null,
+                            })}
+                          >
+                            Entfernen
+                          </Button>
+                        )}
+                        
+                        <Typography variant="caption" display="block" sx={{ mt: 1, color: '#6b7280' }}>
+                          JPG, PNG oder GIF. Max. 2MB. Ein Fallback-Avatar wird verwendet, falls kein Bild hochgeladen wird.
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Grid>
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
