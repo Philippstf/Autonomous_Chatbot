@@ -106,7 +106,6 @@ class SupabaseStorage:
                         description=row['description'],
                         branding=config_data.get('branding', {}),
                         website_url=config_data.get('website_url'),
-                        extended_config=config_data.get('extended_config', {})
                     ),
                     "created_at": row['created_at'],
                     "updated_at": row['updated_at'],
@@ -137,7 +136,6 @@ class SupabaseStorage:
                         description=row['description'],
                         branding=config_data.get('branding', {}),
                         website_url=config_data.get('website_url'),
-                        extended_config=config_data.get('extended_config', {})
                     ),
                     "created_at": row['created_at'],
                     "updated_at": row['updated_at'],
@@ -287,8 +285,6 @@ class SupabaseStorage:
             
             result = self.supabase.table('messages').insert({
                 "id": message_id,
-                "user_id": user_id,
-                "chatbot_id": chatbot_id,
                 "conversation_id": conversation_id,
                 "role": role,  # "user" or "assistant"
                 "content": content,
@@ -308,7 +304,7 @@ class SupabaseStorage:
     def get_conversation_history(self, user_id: str, chatbot_id: str, conversation_id: str) -> List[Dict]:
         """Get conversation history"""
         try:
-            result = self.supabase.table('messages').select("*").eq('user_id', user_id).eq('chatbot_id', chatbot_id).eq('conversation_id', conversation_id).order('created_at', desc=False).execute()
+            result = self.supabase.table('messages').select("*").eq('conversation_id', conversation_id).order('created_at', desc=False).execute()
             
             return result.data
             
@@ -320,7 +316,13 @@ class SupabaseStorage:
         """Get all conversations for specific chatbot with summary info"""
         try:
             # Get unique conversations with latest message info
-            result = self.supabase.table('messages').select("conversation_id, created_at").eq('user_id', user_id).eq('chatbot_id', chatbot_id).order('created_at', desc=True).execute()
+            # Get conversations for this user and chatbot, then get messages
+            conversations_result = self.supabase.table('conversations').select("id").eq('user_id', user_id).eq('chatbot_id', chatbot_id).execute()
+            if not conversations_result.data:
+                return []
+            
+            conversation_ids = [conv['id'] for conv in conversations_result.data]
+            result = self.supabase.table('messages').select("conversation_id, created_at").in_('conversation_id', conversation_ids).order('created_at', desc=True).execute()
             
             # Group by conversation_id and get summary
             conversations = {}
