@@ -696,10 +696,21 @@ async def submit_lead(chatbot_id: str, lead_data: LeadSubmission):
 async def get_chat_config(chatbot_id: str):
     """Get chatbot configuration for frontend"""
     try:
-        # Lade die Config direkt
-        config = chatbot_factory.load_chatbot_config(chatbot_id)
-        if not config:
+        # Lade die Config aus Supabase
+        result = supabase_storage.supabase.table('chatbot_configs').select("*").eq('id', chatbot_id).execute()
+        if not result.data:
             raise HTTPException(status_code=404, detail="Chatbot config not found")
+        
+        # Konvertiere zu ChatbotConfig
+        row = result.data[0]
+        config_data = row['config_data']
+        config = ChatbotConfig(
+            id=row['id'],
+            name=row['name'],
+            description=row['description'],
+            branding=config_data.get('branding', {}),
+            website_url=config_data.get('website_url')
+        )
         
         # Prüfe ob RAG-System verfügbar ist
         rag_system = chatbot_factory.get_chatbot(chatbot_id)
