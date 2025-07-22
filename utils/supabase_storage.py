@@ -15,12 +15,18 @@ class SupabaseStorage:
     
     def __init__(self):
         self.supabase_url = os.getenv("SUPABASE_URL")
-        self.supabase_key = os.getenv("SUPABASE_ANON_KEY")
+        self.supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
+        self.supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         
-        if not self.supabase_url or not self.supabase_key:
+        if not self.supabase_url or not self.supabase_anon_key:
             raise ValueError("Supabase credentials not found in environment")
         
-        self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+        # Use service role key if available for backend operations, otherwise anon key
+        service_key = self.supabase_service_key or self.supabase_anon_key
+        self.supabase: Client = create_client(self.supabase_url, service_key)
+        
+        # Create separate client for user operations (anon key)
+        self.supabase_anon: Client = create_client(self.supabase_url, self.supabase_anon_key)
     
     def create_chatbot_config(self, user_id: str, config: ChatbotConfig) -> str:
         """Create new chatbot configuration for specific user"""
@@ -83,6 +89,7 @@ class SupabaseStorage:
     def get_user_chatbots(self, user_id: str) -> List[Dict]:
         """Get all chatbots for specific user"""
         try:
+            # Use service role for this operation to bypass RLS
             result = self.supabase.table('chatbot_configs').select("*").eq('user_id', user_id).execute()
             
             chatbots = []
