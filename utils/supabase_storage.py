@@ -89,8 +89,11 @@ class SupabaseStorage:
     def get_user_chatbots(self, user_id: str) -> List[Dict]:
         """Get all chatbots for specific user"""
         try:
+            logger.info(f"🔍 Searching for chatbots for user: {user_id}")
             # Use service role for this operation to bypass RLS
             result = self.supabase.table('chatbot_configs').select("*").eq('user_id', user_id).execute()
+            logger.info(f"🔍 Database query result: {len(result.data)} rows found")
+            logger.info(f"🔍 Raw data: {result.data}")
             
             chatbots = []
             for row in result.data:
@@ -282,7 +285,7 @@ class SupabaseStorage:
         try:
             message_id = str(uuid.uuid4())
             
-            result = self.supabase.table('conversation_messages').insert({
+            result = self.supabase.table('messages').insert({
                 "id": message_id,
                 "user_id": user_id,
                 "chatbot_id": chatbot_id,
@@ -305,7 +308,7 @@ class SupabaseStorage:
     def get_conversation_history(self, user_id: str, chatbot_id: str, conversation_id: str) -> List[Dict]:
         """Get conversation history"""
         try:
-            result = self.supabase.table('conversation_messages').select("*").eq('user_id', user_id).eq('chatbot_id', chatbot_id).eq('conversation_id', conversation_id).order('created_at', desc=False).execute()
+            result = self.supabase.table('messages').select("*").eq('user_id', user_id).eq('chatbot_id', chatbot_id).eq('conversation_id', conversation_id).order('created_at', desc=False).execute()
             
             return result.data
             
@@ -317,7 +320,7 @@ class SupabaseStorage:
         """Get all conversations for specific chatbot with summary info"""
         try:
             # Get unique conversations with latest message info
-            result = self.supabase.table('conversation_messages').select("conversation_id, created_at").eq('user_id', user_id).eq('chatbot_id', chatbot_id).order('created_at', desc=True).execute()
+            result = self.supabase.table('messages').select("conversation_id, created_at").eq('user_id', user_id).eq('chatbot_id', chatbot_id).order('created_at', desc=True).execute()
             
             # Group by conversation_id and get summary
             conversations = {}
