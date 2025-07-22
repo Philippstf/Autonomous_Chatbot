@@ -128,7 +128,9 @@ app.add_middleware(
         "http://localhost:3000", 
         "http://127.0.0.1:3000",
         "https://helferlain-project-ezxwunxlf-philipp-staufenbergers-projects.vercel.app",
-        "https://*.vercel.app"  # Allow all Vercel domains
+        "https://helferlain-project-72nvtv6ib-philipp-staufenbergers-projects.vercel.app",
+        "https://helferlain-project.vercel.app",  # Main Vercel domain
+        "*"  # Allow all origins for now (remove in production)
     ],
     allow_credentials=True,
     allow_methods=["*"],
