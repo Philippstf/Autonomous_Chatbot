@@ -178,8 +178,8 @@ async def health_check():
 # ─── Chatbot Management Endpoints ────────────────────────────────────────────
 
 @app.get("/api/chatbots")
-async def get_all_chatbots(current_user: dict = Depends(get_current_user)):
-    """Get all chatbots for current user"""
+async def get_all_chatbots():
+    """Get all chatbots - temporarily public"""
     try:
         # Get all chatbots and filter by user
         all_chatbots = chatbot_factory.get_all_chatbots()
@@ -550,7 +550,7 @@ async def upload_documents(files: List[UploadFile] = File(...)):
 
 @app.get("/api/analytics/overview")
 async def get_analytics_overview():
-    """Get platform analytics overview"""
+    """Get platform analytics overview - temporarily public"""
     try:
         all_chatbots = chatbot_factory.get_all_chatbots()
         

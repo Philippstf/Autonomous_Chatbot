@@ -154,7 +154,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: 3, color: 'white' }}>
       {/* Welcome Header */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -164,7 +164,7 @@ const DashboardPage = () => {
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ 
             fontWeight: 700, 
-            color: '#1e3a8a',
+            color: '#60a5fa',
             mb: 1
           }}>
             Willkommen zurück, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}! 👋
