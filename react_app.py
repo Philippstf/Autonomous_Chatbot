@@ -579,24 +579,62 @@ async def get_analytics_overview(current_user: dict = Depends(get_current_user))
         # Count active chats for this user
         user_active_count = sum(1 for bot in user_chatbots if bot["config"].id in active_chats)
         
-        # Calculate total documents/chunks for user's chatbots
+        # Calculate real statistics for user's chatbots
         total_documents = 0
+        total_conversations = 0
+        recent_activity = []
+        
         for chatbot in user_chatbots:
             try:
                 config = chatbot["config"]
-                rag_system = MultiSourceRAG(chatbot_id=config.id)
+                chatbot_id = config.id
+                
+                # Count actual documents/chunks
+                rag_system = MultiSourceRAG(chatbot_id=chatbot_id)
                 if rag_system.metadata_file.exists():
-                    # Try to count chunks from metadata
-                    total_documents += 10  # Placeholder - could read actual chunk count
-            except:
-                pass
+                    try:
+                        import json
+                        with open(rag_system.metadata_file, 'r') as f:
+                            metadata = json.load(f)
+                            total_documents += len(metadata.get('chunks', []))
+                    except:
+                        # If metadata reading fails, estimate based on config
+                        if hasattr(config, 'website_url') and config.website_url:
+                            total_documents += 5  # Estimated chunks from website
+                        if hasattr(config, 'extended_config'):
+                            manual_text = config.extended_config.get('manual_text', '')
+                            if manual_text:
+                                total_documents += max(1, len(manual_text) // 500)  # ~500 chars per chunk
+                
+                # Count conversations for this chatbot
+                try:
+                    conversations_result = supabase.table('conversations').select('id').eq('user_id', user_id).execute()
+                    if conversations_result.data:
+                        total_conversations += len(conversations_result.data)
+                except:
+                    pass
+                
+                # Add to recent activity
+                recent_activity.append({
+                    "type": "chatbot_created",
+                    "chatbot_name": config.name,
+                    "created_at": chatbot.get("created_at"),
+                    "id": chatbot_id
+                })
+                
+            except Exception as e:
+                logger.warning(f"Error calculating stats for chatbot {chatbot.get('config', {}).get('id', 'unknown')}: {e}")
+        
+        # Sort recent activity by date (most recent first)
+        recent_activity.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        recent_activity = recent_activity[:5]  # Limit to 5 most recent
         
         analytics = {
             "total_chatbots": len(user_chatbots),
             "active_chatbots": user_active_count,
-            "total_conversations": 0,  # TODO: Implement user-specific conversation tracking
+            "total_conversations": total_conversations,
             "total_documents": total_documents,
-            "recent_activity": []  # TODO: Implement user-specific activity tracking
+            "recent_activity": recent_activity
         }
         
         return analytics

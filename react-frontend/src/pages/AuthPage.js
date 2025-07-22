@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { supabase } from '../config/supabase';
+import BetaDisclaimerModal from '../components/BetaDisclaimerModal';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ const AuthPage = () => {
     confirmPassword: '',
     name: ''
   });
+  const [showBetaDisclaimer, setShowBetaDisclaimer] = useState(false);
+  const [pendingAuth, setPendingAuth] = useState(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -62,7 +65,15 @@ const AuthPage = () => {
       if (error) throw error;
 
       if (data.user) {
-        navigate('/dashboard');
+        // Check if user has accepted beta disclaimer before
+        const hasAcceptedDisclaimer = localStorage.getItem(`beta_accepted_${data.user.id}`);
+        
+        if (!hasAcceptedDisclaimer) {
+          setPendingAuth({ type: 'login', user: data.user });
+          setShowBetaDisclaimer(true);
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
       setError(error.message);
@@ -103,10 +114,11 @@ const AuthPage = () => {
 
       if (data.user) {
         if (data.user.email_confirmed_at) {
-          // User is immediately confirmed
-          navigate('/dashboard');
+          // User is immediately confirmed - show beta disclaimer for new users
+          setPendingAuth({ type: 'register', user: data.user });
+          setShowBetaDisclaimer(true);
         } else {
-          // User needs to confirm email
+          // User needs to confirm email first
           setSuccess('Registrierung erfolgreich! Bitte prüfen Sie Ihr Email-Postfach zur Bestätigung.');
           setMode('login');
         }
@@ -139,6 +151,30 @@ const AuthPage = () => {
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBetaDisclaimerAccept = () => {
+    if (pendingAuth && pendingAuth.user) {
+      // Store acceptance in localStorage
+      localStorage.setItem(`beta_accepted_${pendingAuth.user.id}`, 'true');
+      
+      // Navigate to dashboard
+      setShowBetaDisclaimer(false);
+      setPendingAuth(null);
+      navigate('/dashboard');
+    }
+  };
+
+  const handleBetaDisclaimerDecline = async () => {
+    if (pendingAuth && pendingAuth.user) {
+      // Sign out the user if they decline
+      await supabase.auth.signOut();
+      
+      // Reset state
+      setShowBetaDisclaimer(false);
+      setPendingAuth(null);
+      setError('Sie müssen den Beta-Hinweisen zustimmen, um HELFERLAIN zu nutzen.');
     }
   };
 
@@ -336,6 +372,13 @@ const AuthPage = () => {
           </Paper>
         </motion.div>
       </Container>
+      
+      {/* Beta Disclaimer Modal */}
+      <BetaDisclaimerModal
+        open={showBetaDisclaimer}
+        onAccept={handleBetaDisclaimerAccept}
+        onDecline={handleBetaDisclaimerDecline}
+      />
     </Box>
   );
 };

@@ -14,6 +14,10 @@ import CreateChatbotPage from './pages/CreateChatbotPage';
 import ChatbotListPage from './pages/ChatbotListPage';
 import ChatbotPage from './pages/ChatbotPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import ImpressumPage from './pages/ImpressumPage';
+import ContactPage from './pages/ContactPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 // Import components
 import Navigation from './components/Navigation';
@@ -26,8 +30,8 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const location = useLocation();
 
-  // Check if we're on a public page (landing or auth)
-  const isPublicPage = ['/', '/auth'].includes(location.pathname);
+  // Check if we're on a public page (landing, auth, or legal pages)
+  const isPublicPage = ['/', '/auth', '/privacy', '/impressum', '/contact', '/terms'].includes(location.pathname);
 
   // Automatically close sidebar on mobile, open on desktop
   useEffect(() => {
@@ -41,11 +45,15 @@ function App() {
   return (
     <AuthProvider>
       <Box sx={{ minHeight: '100vh' }}>
-        {/* Public pages (Landing & Auth) - no sidebar/header */}
+        {/* Public pages (Landing, Auth & Legal) - no sidebar/header */}
         {isPublicPage ? (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
           </Routes>
         ) : (
           /* Protected app layout with sidebar/header */

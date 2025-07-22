@@ -10,7 +10,10 @@ import {
   useTheme,
   useMediaQuery,
   Alert,
-  CircularProgress
+  CircularProgress,
+  CardActions,
+  Chip,
+  Avatar
 } from '@mui/material';
 import { 
   SmartToy, 
@@ -18,7 +21,10 @@ import {
   Add,
   TrendingUp,
   ChatBubbleOutline,
-  PeopleAlt 
+  PeopleAlt,
+  Chat,
+  Settings,
+  Visibility
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +43,7 @@ const DashboardPage = () => {
     totalDocuments: 0,
     activeChatbots: 0
   });
+  const [chatbots, setChatbots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -57,6 +64,12 @@ const DashboardPage = () => {
         activeChatbots: analyticsResponse.data.active_chatbots || 0
       });
       
+      // Fetch chatbots for recent chatbots section
+      if (analyticsResponse.data.total_chatbots > 0) {
+        const chatbotsResponse = await api.get('/chatbots');
+        setChatbots(chatbotsResponse.data.chatbots || []);
+      }
+      
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       setError('Dashboard-Daten konnten nicht geladen werden');
@@ -64,6 +77,72 @@ const DashboardPage = () => {
       setLoading(false);
     }
   };
+
+  const ChatbotCard = ({ chatbot }) => (
+    <motion.div
+      whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(30, 58, 138, 0.15)' }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card sx={{ 
+        height: '100%',
+        background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+        border: '1px solid rgba(30, 58, 138, 0.1)'
+      }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Avatar sx={{ 
+              bgcolor: '#1e3a8a', 
+              mr: 2, 
+              width: 48, 
+              height: 48 
+            }}>
+              <SmartToy />
+            </Avatar>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" sx={{ 
+                fontWeight: 600, 
+                color: '#1e3a8a',
+                mb: 0.5
+              }}>
+                {chatbot.config.name}
+              </Typography>
+              <Chip 
+                label={chatbot.runtime_status?.loaded ? "Aktiv" : "Inaktiv"}
+                size="small"
+                color={chatbot.runtime_status?.loaded ? "success" : "default"}
+              />
+            </Box>
+          </Box>
+          
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {chatbot.config.description || 'Keine Beschreibung verfügbar'}
+          </Typography>
+          
+          <Typography variant="caption" color="text.secondary">
+            Erstellt: {new Date(chatbot.created_at).toLocaleDateString('de-DE')}
+          </Typography>
+        </CardContent>
+        
+        <CardActions sx={{ p: 2, pt: 0 }}>
+          <Button 
+            size="small" 
+            startIcon={<Chat />}
+            onClick={() => navigate(`/chatbot/${chatbot.config.id}`)}
+            sx={{ mr: 1 }}
+          >
+            Chat
+          </Button>
+          <Button 
+            size="small" 
+            startIcon={<Settings />}
+            onClick={() => navigate(`/chatbots`)}
+          >
+            Verwalten
+          </Button>
+        </CardActions>
+      </Card>
+    </motion.div>
+  );
 
   const StatCard = ({ title, value, icon, color = '#1e3a8a', onClick }) => (
     <motion.div
@@ -181,51 +260,41 @@ const DashboardPage = () => {
         </Alert>
       )}
 
-      {/* Statistics Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#374151' }}>
-          📊 Ihre Statistiken
-        </Typography>
-        
-        <Grid container spacing={3} sx={{ mb: 5 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Chatbots"
-              value={stats.totalChatbots}
-              icon={<SmartToy />}
-              onClick={() => navigate('/chatbots')}
-            />
+      {/* Recent Chatbots - only show if user has chatbots */}
+      {stats.totalChatbots > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#374151' }}>
+            🤖 Letzte Chatbots
+          </Typography>
+          
+          <Grid container spacing={3} sx={{ mb: 5 }}>
+            {chatbots.slice(0, 4).map((chatbot) => (
+              <Grid item xs={12} sm={6} lg={3} key={chatbot.config.id}>
+                <ChatbotCard chatbot={chatbot} />
+              </Grid>
+            ))}
+            
+            {chatbots.length > 4 && (
+              <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
+                <Button 
+                  variant="outlined" 
+                  onClick={() => navigate('/chatbots')}
+                  sx={{ 
+                    borderColor: '#1e3a8a',
+                    color: '#1e3a8a'
+                  }}
+                >
+                  Alle {chatbots.length} Chatbots anzeigen
+                </Button>
+              </Grid>
+            )}
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Aktive Bots"
-              value={stats.activeChatbots}
-              icon={<TrendingUp />}
-              color="#10b981"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Gespräche"
-              value={stats.totalConversations}
-              icon={<ChatBubbleOutline />}
-              color="#3b82f6"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Dokumente"
-              value={stats.totalDocuments}
-              icon={<PeopleAlt />}
-              color="#8b5cf6"
-            />
-          </Grid>
-        </Grid>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Quick Actions */}
       <motion.div

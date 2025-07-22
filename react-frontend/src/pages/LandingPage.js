@@ -26,6 +26,10 @@ const LandingPage = () => {
     navigate('/auth?mode=login');
   };
 
+  const handleFooterNavigation = (path) => {
+    navigate(path);
+  };
+
   return (
     <Box sx={{ 
       minHeight: '100vh',
@@ -616,14 +620,37 @@ const LandingPage = () => {
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}>
+              <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 3, flexWrap: 'wrap' }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  onClick={() => handleFooterNavigation('/terms')}
+                  sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}
+                >
+                  Nutzungsbedingungen
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  onClick={() => handleFooterNavigation('/privacy')}
+                  sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}
+                >
                   Datenschutz
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  onClick={() => handleFooterNavigation('/impressum')}
+                  sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}
+                >
                   Impressum
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  onClick={() => handleFooterNavigation('/contact')}
+                  sx={{ cursor: 'pointer', '&:hover': { color: '#1e3a8a' } }}
+                >
                   Kontakt
                 </Typography>
               </Box>

@@ -24,6 +24,7 @@ import FeaturesStep from '../components/wizard/FeaturesStep';
 import ContactPersonsStep from '../components/wizard/ContactPersonsStep';
 import DataSourcesStep from '../components/wizard/DataSourcesStep';
 import PreviewStep from '../components/wizard/PreviewStep';
+import BotCreationDisclaimerModal from '../components/BotCreationDisclaimerModal';
 
 const wizardSteps = [
   { id: 'basic', label: 'Basic Settings', icon: '📋' },
@@ -110,6 +111,7 @@ function CreateChatbotPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [creationProgress, setCreationProgress] = useState(null);
   const [error, setError] = useState(null);
+  const [showCreationDisclaimer, setShowCreationDisclaimer] = useState(false);
 
   const updateFormData = (stepData) => {
     setFormData(prev => ({
@@ -146,8 +148,14 @@ function CreateChatbotPage() {
     }
   };
 
-  const handleCreateChatbot = async () => {
+  const handleCreateChatbot = () => {
+    // Show disclaimer modal first
+    setShowCreationDisclaimer(true);
+  };
+
+  const handleConfirmCreation = async () => {
     try {
+      setShowCreationDisclaimer(false);
       setIsCreating(true);
       setError(null);
 
@@ -197,6 +205,10 @@ function CreateChatbotPage() {
       setError(error.message || 'Failed to create chatbot');
       setIsCreating(false);
     }
+  };
+
+  const handleCancelCreation = () => {
+    setShowCreationDisclaimer(false);
   };
 
   const renderStepContent = (stepIndex) => {
@@ -431,6 +443,14 @@ function CreateChatbotPage() {
           </Box>
         </Paper>
       </motion.div>
+      
+      {/* Bot Creation Disclaimer Modal */}
+      <BotCreationDisclaimerModal
+        open={showCreationDisclaimer}
+        onAccept={handleConfirmCreation}
+        onCancel={handleCancelCreation}
+        botName={formData.name}
+      />
     </Box>
   );
 }
