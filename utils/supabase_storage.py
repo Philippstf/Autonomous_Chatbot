@@ -277,18 +277,50 @@ class SupabaseStorage:
     
     # ─── Conversation Management ────────────────────────────────────────────────
     
+    def create_or_get_conversation(self, user_id: str, chatbot_id: str, conversation_id: str = None) -> str:
+        """Create or get existing conversation, returns UUID"""
+        try:
+            if conversation_id:
+                # Check if conversation exists
+                result = self.supabase.table('conversations').select("id").eq('id', conversation_id).execute()
+                if result.data:
+                    return result.data[0]['id']
+            
+            # Create new conversation
+            conv_uuid = str(uuid.uuid4())
+            result = self.supabase.table('conversations').insert({
+                "id": conv_uuid,
+                "user_id": user_id,
+                "chatbot_id": chatbot_id,
+                "title": "New Conversation",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }).execute()
+            
+            if result.data:
+                logger.info(f"✅ Created conversation {conv_uuid} for user {user_id}")
+                return conv_uuid
+            else:
+                raise Exception("Failed to create conversation")
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to create/get conversation: {e}")
+            raise
+    
     def save_conversation_message(self, user_id: str, chatbot_id: str, conversation_id: str, 
                                 role: str, content: str, metadata: Dict = None) -> str:
         """Save conversation message"""
         try:
+            # Ensure conversation exists and get UUID
+            conv_uuid = self.create_or_get_conversation(user_id, chatbot_id, conversation_id)
+            
             message_id = str(uuid.uuid4())
             
             result = self.supabase.table('messages').insert({
                 "id": message_id,
-                "conversation_id": conversation_id,
+                "conversation_id": conv_uuid,  # Use UUID instead of string
                 "role": role,  # "user" or "assistant"
                 "content": content,
-                "metadata": metadata or {},
                 "created_at": datetime.now().isoformat()
             }).execute()
             
