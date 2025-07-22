@@ -148,6 +148,15 @@ export const sendChatMessage = async (chatbotId, message, conversationId = null)
   }
 };
 
+export const submitLead = async (chatbotId, leadData) => {
+  try {
+    const response = await api.post(`/chat/${chatbotId}/submit-lead`, leadData);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to submit lead: ${error.response?.data?.detail || error.message}`);
+  }
+};
+
 export const getChatConfig = async (chatbotId) => {
   try {
     const response = await api.get(`/chat/${chatbotId}/config`);

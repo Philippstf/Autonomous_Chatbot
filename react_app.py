@@ -65,11 +65,25 @@ class ChatResponse(BaseModel):
     sources: List[Dict] = []
     conversation_id: str
     timestamp: datetime
+    metadata: Optional[Dict] = {}
 
 class ProgressUpdate(BaseModel):
     message: str
     progress: float
     status: str = "processing"
+
+class LeadSubmission(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    message: Optional[str] = None
+    conversation_id: str
+    lead_source: str = "chat_capture"
+
+class ConversationMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+    timestamp: datetime
 
 # ─── Global Variables ────────────────────────────────────────────────────────
 
@@ -463,7 +477,7 @@ async def delete_chatbot(chatbot_id: str):
 
 @app.post("/api/chat/{chatbot_id}", response_model=ChatResponse)
 async def chat_with_bot(chatbot_id: str, message: ChatMessage):
-    """Send message to chatbot"""
+    """Send message to chatbot with conversation tracking"""
     try:
         if chatbot_id not in active_chats:
             # Try to load chatbot
@@ -474,23 +488,163 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         
         rag_system = active_chats[chatbot_id]
         
+        # Get chatbot owner for conversation tracking
+        chatbot_config = chatbot_factory.load_chatbot_config(chatbot_id)
+        if not chatbot_config:
+            raise HTTPException(status_code=404, detail="Chatbot config not found")
+        
+        # Find chatbot owner
+        user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id").eq('id', chatbot_id).execute()
+        if not user_chatbots.data:
+            raise HTTPException(status_code=404, detail="Chatbot owner not found")
+        
+        owner_user_id = user_chatbots.data[0]['user_id']
+        
+        # Generate conversation_id if not provided
+        conversation_id = message.conversation_id or str(uuid.uuid4())
+        
+        # Save user message to conversation history
+        supabase_storage.save_conversation_message(
+            user_id=owner_user_id,
+            chatbot_id=chatbot_id,
+            conversation_id=conversation_id,
+            role="user",
+            content=message.message,
+            metadata={"timestamp": datetime.now().isoformat()}
+        )
+        
         # Generate response
         response_data = rag_system.get_response(
             query=message.message,
-            conversation_id=message.conversation_id
+            conversation_id=conversation_id
         )
         
-        return ChatResponse(
-            response=response_data["response"],
+        # Get chatbot features for email capture logic - check extended_config first
+        extended_config = getattr(chatbot_config, 'extended_config', {})
+        features = extended_config.get('features', {})
+        
+        # Fallback to branding for backward compatibility
+        if not features:
+            features = getattr(chatbot_config, 'branding', {}).get('features', {})
+        
+        email_capture_enabled = features.get('email_capture_enabled', False)
+        
+        bot_response = response_data["response"]
+        should_show_email_capture = False
+        
+        # Email capture logic - only if enabled and not already captured in this conversation
+        if email_capture_enabled:
+            email_config = features.get('email_capture_config', {})
+            trigger_keywords = email_config.get('trigger_keywords', [])
+            after_messages = email_config.get('after_messages', 3)
+            
+            # Check if email already captured in this conversation
+            existing_leads = supabase_storage.supabase.table('leads').select("id").eq('conversation_id', conversation_id).execute()
+            email_already_captured = len(existing_leads.data) > 0
+            
+            if not email_already_captured:
+                # Check message count in conversation
+                messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
+                message_count = len(messages)
+                
+                # Check if should trigger email capture
+                user_message_lower = message.message.lower()
+                keyword_triggered = any(keyword.lower() in user_message_lower for keyword in trigger_keywords)
+                message_count_triggered = message_count >= after_messages * 2  # *2 because we count both user and bot messages
+                
+                if keyword_triggered or message_count_triggered:
+                    should_show_email_capture = True
+        
+        # Save bot response to conversation history
+        supabase_storage.save_conversation_message(
+            user_id=owner_user_id,
+            chatbot_id=chatbot_id,
+            conversation_id=conversation_id,
+            role="assistant",
+            content=bot_response,
+            metadata={
+                "timestamp": datetime.now().isoformat(),
+                "email_capture_shown": should_show_email_capture,
+                "sources": response_data.get("sources", [])
+            }
+        )
+        
+        # Prepare response
+        chat_response = ChatResponse(
+            response=bot_response,
             sources=response_data.get("sources", []),
-            conversation_id=response_data.get("conversation_id", str(uuid.uuid4())),
+            conversation_id=conversation_id,
             timestamp=datetime.now()
         )
+        
+        # Add email capture prompt if needed
+        if should_show_email_capture:
+            email_prompt = features.get('email_capture_config', {}).get('prompt', 
+                'Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen.')
+            
+            # Add metadata to indicate email capture should be shown
+            chat_response.metadata = {
+                'show_email_capture': True,
+                'email_prompt': email_prompt
+            }
+        
+        return chat_response
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Chat error for {chatbot_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chat/{chatbot_id}/submit-lead")
+async def submit_lead(chatbot_id: str, lead_data: LeadSubmission):
+    """Submit lead for chatbot"""
+    try:
+        # Find chatbot owner
+        user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id").eq('id', chatbot_id).execute()
+        if not user_chatbots.data:
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+        
+        owner_user_id = user_chatbots.data[0]['user_id']
+        
+        # Check if lead already exists for this conversation
+        existing_leads = supabase_storage.supabase.table('leads').select("id").eq('conversation_id', lead_data.conversation_id).execute()
+        if existing_leads.data:
+            raise HTTPException(status_code=409, detail="Lead already submitted for this conversation")
+        
+        # Create lead
+        lead_id = supabase_storage.create_lead(
+            user_id=owner_user_id,
+            chatbot_id=chatbot_id,
+            lead_data=lead_data.dict()
+        )
+        
+        # Save lead submission as conversation message
+        supabase_storage.save_conversation_message(
+            user_id=owner_user_id,
+            chatbot_id=chatbot_id,
+            conversation_id=lead_data.conversation_id,
+            role="system",
+            content=f"Lead submitted: {lead_data.email}",
+            metadata={
+                "type": "lead_submission",
+                "lead_id": lead_id,
+                "email": lead_data.email,
+                "name": lead_data.name,
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+        
+        return {
+            "success": True,
+            "lead_id": lead_id,
+            "message": "Lead erfolgreich gespeichert. Vielen Dank für Ihr Interesse!"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to submit lead for {chatbot_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/chat/{chatbot_id}/config")
@@ -561,6 +715,154 @@ async def upload_documents(files: List[UploadFile] = File(...)):
         
     except Exception as e:
         logger.error(f"File upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ─── Lead Management Endpoints ───────────────────────────────────────────────
+
+@app.get("/api/leads")
+async def get_user_leads(current_user: dict = Depends(get_current_user), limit: int = 100, offset: int = 0):
+    """Get all leads for current user across all chatbots"""
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+        
+        leads = supabase_storage.get_user_leads(user_id, limit, offset)
+        
+        # Add chatbot name to each lead
+        for lead in leads:
+            chatbot_id = lead.get('chatbot_id')
+            if chatbot_id:
+                chatbot = supabase_storage.get_chatbot_config(user_id, chatbot_id)
+                if chatbot:
+                    lead['chatbot_name'] = chatbot['config'].name
+        
+        return {
+            "leads": leads,
+            "total": len(leads),
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get user leads: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/chatbots/{chatbot_id}/leads")
+async def get_chatbot_leads(chatbot_id: str, current_user: dict = Depends(get_current_user), limit: int = 50, offset: int = 0):
+    """Get leads for specific chatbot"""
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+        
+        # Verify user owns this chatbot
+        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+        
+        leads = supabase_storage.get_chatbot_leads(user_id, chatbot_id, limit, offset)
+        
+        return {
+            "leads": leads,
+            "chatbot_id": chatbot_id,
+            "total": len(leads),
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get chatbot leads: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/chatbots/{chatbot_id}/conversations")
+async def get_chatbot_conversations(chatbot_id: str, current_user: dict = Depends(get_current_user), limit: int = 20, offset: int = 0):
+    """Get conversations for specific chatbot"""
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+        
+        # Verify user owns this chatbot
+        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+        
+        conversations = supabase_storage.get_chatbot_conversations(user_id, chatbot_id, limit, offset)
+        
+        # Get detailed summary for each conversation
+        detailed_conversations = []
+        for conv in conversations:
+            conv_id = conv['conversation_id']
+            summary = supabase_storage.get_conversation_summary(user_id, chatbot_id, conv_id)
+            detailed_conversations.append(summary)
+        
+        return {
+            "conversations": detailed_conversations,
+            "chatbot_id": chatbot_id,
+            "total": len(detailed_conversations),
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get chatbot conversations: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/chatbots/{chatbot_id}/conversations/{conversation_id}")
+async def get_conversation_detail(chatbot_id: str, conversation_id: str, current_user: dict = Depends(get_current_user)):
+    """Get detailed conversation history"""
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+        
+        # Verify user owns this chatbot
+        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+        
+        messages = supabase_storage.get_conversation_history(user_id, chatbot_id, conversation_id)
+        summary = supabase_storage.get_conversation_summary(user_id, chatbot_id, conversation_id)
+        
+        return {
+            "conversation_id": conversation_id,
+            "chatbot_id": chatbot_id,
+            "messages": messages,
+            "summary": summary
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get conversation detail: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/leads/{lead_id}/status")
+async def update_lead_status(lead_id: str, status: str, current_user: dict = Depends(get_current_user)):
+    """Update lead status"""
+    try:
+        user_id = current_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found")
+        
+        # Validate status
+        valid_statuses = ["new", "contacted", "qualified", "converted", "lost"]
+        if status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Valid values: {valid_statuses}")
+        
+        success = supabase_storage.update_lead_status(user_id, lead_id, status)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Lead not found or permission denied")
+        
+        return {"success": True, "message": "Lead status updated"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update lead status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ─── Analytics Endpoints ─────────────────────────────────────────────────────

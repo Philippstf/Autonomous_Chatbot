@@ -14,6 +14,7 @@ import CreateChatbotPage from './pages/CreateChatbotPage';
 import ChatbotListPage from './pages/ChatbotListPage';
 import ChatbotPage from './pages/ChatbotPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import LeadManagementPage from './pages/LeadManagementPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ImpressumPage from './pages/ImpressumPage';
 import ContactPage from './pages/ContactPage';
@@ -104,6 +105,7 @@ function App() {
                       <Route path="/create" element={<CreateChatbotPage />} />
                       <Route path="/chatbots" element={<ChatbotListPage />} />
                       <Route path="/chatbot/:id" element={<ChatbotPage />} />
+                      <Route path="/leads" element={<LeadManagementPage />} />
                       <Route path="/analytics" element={<AnalyticsPage />} />
                     </Route>
                   </Routes>

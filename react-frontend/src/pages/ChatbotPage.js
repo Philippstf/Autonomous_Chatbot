@@ -17,6 +17,11 @@ import {
   Container,
   useTheme,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -26,7 +31,7 @@ import {
   Launch as LaunchIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getChatConfig, sendChatMessage } from '../services/api';
+import { getChatConfig, sendChatMessage, submitLead } from '../services/api';
 
 function ChatbotPage() {
   const { id: chatbotId } = useParams();
@@ -37,6 +42,10 @@ function ChatbotPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [emailCapturePrompt, setEmailCapturePrompt] = useState('');
+  const [emailFormData, setEmailFormData] = useState({ email: '', name: '', phone: '', message: '' });
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
   const messagesEndRef = useRef(null);
 
   const {
@@ -101,9 +110,16 @@ function ChatbotPage() {
         content: response.response,
         sources: response.sources || [],
         timestamp: new Date(response.timestamp),
+        metadata: response.metadata || {}
       };
 
       setMessages(prev => [...prev, botMessage]);
+      
+      // Check for email capture trigger
+      if (response.metadata?.show_email_capture && !showEmailCapture) {
+        setShowEmailCapture(true);
+        setEmailCapturePrompt(response.metadata.email_prompt || 'Möchten Sie weitere Informationen erhalten?');
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       const errorMessage = {
@@ -117,6 +133,63 @@ function ChatbotPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    if (!emailFormData.email.trim() || emailSubmitting) return;
+
+    setEmailSubmitting(true);
+    try {
+      const leadData = {
+        email: emailFormData.email,
+        name: emailFormData.name || null,
+        phone: emailFormData.phone || null,
+        message: emailFormData.message || null,
+        conversation_id: conversationId,
+        lead_source: 'chat_capture'
+      };
+
+      const response = await submitLead(chatbotId, leadData);
+      
+      // Add confirmation message to chat
+      const confirmationMessage = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: response.message || 'Vielen Dank! Wir haben Ihre Kontaktdaten erhalten und werden uns bald bei Ihnen melden.',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, confirmationMessage]);
+      setShowEmailCapture(false);
+      setEmailFormData({ email: '', name: '', phone: '', message: '' });
+      
+    } catch (error) {
+      console.error('Failed to submit lead:', error);
+      const errorMessage = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: 'Entschuldigung, beim Speichern Ihrer Kontaktdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+        isError: true,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setEmailSubmitting(false);
+    }
+  };
+
+  const handleEmailClose = () => {
+    setShowEmailCapture(false);
+    
+    // Add dismissal message to chat
+    const dismissalMessage = {
+      id: Date.now().toString(),
+      type: 'system',
+      content: 'Kein Problem! Wenn Sie später Kontaktinformationen benötigen, fragen Sie einfach nach "Kontakt" oder "Angebot".',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, dismissalMessage]);
   };
 
 
@@ -141,37 +214,68 @@ function ChatbotPage() {
     </Box>
   );
 
-  const MessageBubble = ({ message }) => (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
-        marginBottom: 16,
-      }}
-    >
-      <Box
-        sx={{
+  const MessageBubble = ({ message }) => {
+    // System messages (confirmations, errors) - centered layout
+    if (message.type === 'system') {
+      return (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          mb: 2,
+          px: 2 
+        }}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              maxWidth: '80%',
+              textAlign: 'center',
+              background: message.isError 
+                ? 'linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1))'
+                : 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))',
+              border: `1px solid ${message.isError ? 'rgba(231, 76, 60, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+            }}
+          >
+            <Typography variant="body2" color={message.isError ? 'error' : 'success.main'}>
+              {message.content}
+            </Typography>
+          </Paper>
+        </Box>
+      );
+    }
+
+    return (
+      <div
+        style={{
           display: 'flex',
-          alignItems: 'flex-start',
-          gap: 1.5,
-          maxWidth: isMobile ? '90%' : '75%',
-          flexDirection: message.type === 'user' ? 'row-reverse' : 'row',
+          justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
+          marginBottom: 16,
         }}
       >
-        {/* Avatar */}
-        <Avatar
+        <Box
           sx={{
-            width: isMobile ? 32 : 36,
-            height: isMobile ? 32 : 36,
-            background: message.type === 'user' 
-              ? 'linear-gradient(135deg, #1f3a93, #4a69bd)'
-              : 'linear-gradient(135deg, #34495e, #5a6c7d)',
-            fontSize: '1rem',
-            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 1.5,
+            maxWidth: isMobile ? '90%' : '75%',
+            flexDirection: message.type === 'user' ? 'row-reverse' : 'row',
           }}
         >
-          {message.type === 'user' ? <PersonIcon /> : <SmartToyIcon />}
-        </Avatar>
+          {/* Avatar */}
+          <Avatar
+            sx={{
+              width: isMobile ? 32 : 36,
+              height: isMobile ? 32 : 36,
+              background: message.type === 'user' 
+                ? 'linear-gradient(135deg, #1f3a93, #4a69bd)'
+                : 'linear-gradient(135deg, #34495e, #5a6c7d)',
+              fontSize: '1rem',
+              flexShrink: 0,
+            }}
+          >
+            {message.type === 'user' ? <PersonIcon /> : <SmartToyIcon />}
+          </Avatar>
 
         {/* Message Content */}
         <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -250,7 +354,8 @@ function ChatbotPage() {
         </Box>
       </Box>
     </div>
-  );
+    );
+  };
 
   if (configLoading) {
     return (
@@ -505,6 +610,116 @@ function ChatbotPage() {
           </Box>
         </Paper>
       </Fade>
+
+      {/* Email Capture Dialog */}
+      <Dialog
+        open={showEmailCapture}
+        onClose={handleEmailClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', 
+          color: 'white',
+          textAlign: 'center'
+        }}>
+          📧 Kontaktinformationen
+        </DialogTitle>
+        
+        <form onSubmit={handleEmailSubmit}>
+          <DialogContent sx={{ p: 3 }}>
+            <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', color: '#374151' }}>
+              {emailCapturePrompt}
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="E-Mail-Adresse *"
+                  type="email"
+                  value={emailFormData.email}
+                  onChange={(e) => setEmailFormData(prev => ({...prev, email: e.target.value}))}
+                  required
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Name (optional)"
+                  value={emailFormData.name}
+                  onChange={(e) => setEmailFormData(prev => ({...prev, name: e.target.value}))}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Telefon (optional)"
+                  value={emailFormData.phone}
+                  onChange={(e) => setEmailFormData(prev => ({...prev, phone: e.target.value}))}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Nachricht (optional)"
+                  multiline
+                  rows={3}
+                  value={emailFormData.message}
+                  onChange={(e) => setEmailFormData(prev => ({...prev, message: e.target.value}))}
+                  placeholder="Beschreiben Sie Ihr Interesse oder Ihre Fragen..."
+                  variant="outlined"
+                />
+              </Grid>
+            </Grid>
+            
+            <Alert severity="info" sx={{ mt: 2, fontSize: '0.9rem' }}>
+              Ihre Daten werden vertraulich behandelt und nur für die Kontaktaufnahme verwendet.
+            </Alert>
+          </DialogContent>
+          
+          <DialogActions sx={{ p: 3, justifyContent: 'space-between' }}>
+            <Button
+              onClick={handleEmailClose}
+              variant="outlined"
+              sx={{ 
+                borderColor: '#6b7280',
+                color: '#6b7280',
+                '&:hover': {
+                  borderColor: '#374151',
+                  color: '#374151'
+                }
+              }}
+            >
+              Später
+            </Button>
+            
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!emailFormData.email.trim() || emailSubmitting}
+              sx={{
+                background: 'linear-gradient(45deg, #1e3a8a, #3b82f6)',
+                px: 3,
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #1e40af, #2563eb)',
+                }
+              }}
+            >
+              {emailSubmitting ? 'Wird gesendet...' : 'Kontaktdaten senden'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
     </Container>
   );

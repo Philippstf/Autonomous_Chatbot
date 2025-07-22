@@ -23,6 +23,7 @@ import {
   Help as HelpIcon,
   Close as CloseIcon,
   Logout as LogoutIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,6 +48,12 @@ const navigationItems = [
     icon: <SmartToyIcon />,
     path: '/chatbots',
     description: 'Manage Bots'
+  },
+  {
+    text: 'Lead Management',
+    icon: <EmailIcon />,
+    path: '/leads',
+    description: 'Leads & Conversations'
   },
   {
     text: 'Analytics',
