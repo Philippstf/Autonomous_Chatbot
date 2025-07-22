@@ -292,6 +292,7 @@ class SupabaseStorage:
                 "id": conv_uuid,
                 "user_id": user_id,
                 "chatbot_id": chatbot_id,
+                "device_id": f"user-{user_id[:8]}",  # Fallback device_id
                 "title": "New Conversation",
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
