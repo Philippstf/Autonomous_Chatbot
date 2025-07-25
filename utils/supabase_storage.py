@@ -106,6 +106,7 @@ class SupabaseStorage:
                         description=row['description'],
                         branding=config_data.get('branding', {}),
                         website_url=config_data.get('website_url'),
+                        extended_config=config_data.get('extended_config', {})
                     ),
                     "created_at": row['created_at'],
                     "updated_at": row['updated_at'],
@@ -136,6 +137,7 @@ class SupabaseStorage:
                         description=row['description'],
                         branding=config_data.get('branding', {}),
                         website_url=config_data.get('website_url'),
+                        extended_config=config_data.get('extended_config', {})
                     ),
                     "created_at": row['created_at'],
                     "updated_at": row['updated_at'],

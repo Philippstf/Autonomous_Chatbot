@@ -525,7 +525,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         )
         
         # Get chatbot features for email capture logic - check extended_config first
-        extended_config = getattr(chatbot_config, 'extended_config', {})
+        extended_config = getattr(chatbot_config, 'extended_config', {}) or {}
         features = extended_config.get('features', {})
         
         # Fallback to branding for backward compatibility
@@ -550,7 +550,11 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         # Email capture logic - only if enabled and not already captured in this conversation
         if email_capture_enabled:
             email_config = features.get('email_capture_config', {})
-            trigger_keywords = email_config.get('trigger_keywords', ['preise', 'angebot', 'kontakt', 'beratung', 'demo'])  # Added fallback keywords
+            trigger_keywords = email_config.get('trigger_keywords', [
+                'preise', 'angebot', 'kontakt', 'beratung', 'demo', 'email', 'mail', 
+                'hinterlassen', 'erreichen', 'kontaktieren', 'anfrage', 'interesse',
+                'informationen', 'details', 'preis', 'kosten', 'termin'
+            ])
             after_messages = email_config.get('after_messages', 3)
             
             logger.info(f"📧 EMAIL CAPTURE - Config: {email_config}")
@@ -566,17 +570,21 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             if not email_already_captured:
                 # Check message count in conversation
                 messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
-                message_count = len(messages)
+                # Count only user messages
+                user_messages = [msg for msg in messages if msg.get('role') == 'user']
+                user_message_count = len(user_messages)
                 
                 # Check if should trigger email capture
                 user_message_lower = message.message.lower()
                 keyword_triggered = any(keyword.lower() in user_message_lower for keyword in trigger_keywords)
-                message_count_triggered = message_count >= after_messages * 2  # *2 because we count both user and bot messages
+                message_count_triggered = user_message_count >= after_messages
                 
                 logger.info(f"📧 EMAIL CAPTURE - User message: '{user_message_lower}'")
-                logger.info(f"📧 EMAIL CAPTURE - Message count: {message_count}")
+                logger.info(f"📧 EMAIL CAPTURE - User message count: {user_message_count}")
+                logger.info(f"📧 EMAIL CAPTURE - Total messages: {len(messages)}")
                 logger.info(f"📧 EMAIL CAPTURE - Keyword triggered: {keyword_triggered}")
                 logger.info(f"📧 EMAIL CAPTURE - Message count triggered: {message_count_triggered}")
+                logger.info(f"📧 EMAIL CAPTURE - After messages threshold: {after_messages}")
                 
                 if keyword_triggered or message_count_triggered:
                     should_show_email_capture = True
@@ -748,7 +756,8 @@ async def get_chat_config(chatbot_id: str):
             name=row['name'],
             description=row['description'],
             branding=config_data.get('branding', {}),
-            website_url=config_data.get('website_url')
+            website_url=config_data.get('website_url'),
+            extended_config=config_data.get('extended_config', {})
         )
         
         # Prüfe ob RAG-System verfügbar ist

@@ -25,6 +25,7 @@ class ChatbotConfig:
     documents: Optional[List[str]] = None
     created_at: str = None
     branding: Optional[Dict] = None
+    extended_config: Optional[Dict] = None
     
     def __post_init__(self):
         if self.created_at is None:
@@ -38,6 +39,8 @@ class ChatbotConfig:
                 "logo_url": None,
                 "welcome_message": f"Hallo! Ich bin {self.name}, dein persönlicher Assistent."
             }
+        if self.extended_config is None:
+            self.extended_config = {}
 
 class ChatbotFactory:
     """Factory für die Erstellung und Verwaltung von Chatbots"""
@@ -167,7 +170,8 @@ class ChatbotFactory:
                 name=name,
                 description=description,
                 website_url=website_url,
-                branding=branding
+                branding=branding,
+                extended_config=extended_config or {}
             )
             
             # Verarbeite Dokumente falls vorhanden
