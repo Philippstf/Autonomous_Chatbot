@@ -10,6 +10,7 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
+import { PeopleAlt } from '@mui/icons-material';
 
 function FeaturesStep({ formData, updateFormData }) {
   const handleFeaturesChange = (field, value) => {
@@ -27,6 +28,18 @@ function FeaturesStep({ formData, updateFormData }) {
         ...formData.features,
         email_capture_config: {
           ...formData.features?.email_capture_config,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  const handleContactPersonsChange = (field, value) => {
+    updateFormData({
+      features: {
+        ...formData.features,
+        contact_persons_config: {
+          ...formData.features?.contact_persons_config,
           [field]: value,
         },
       },
@@ -55,8 +68,9 @@ function FeaturesStep({ formData, updateFormData }) {
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Email Capture Card */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 📧 Email-Erfassung
@@ -82,15 +96,17 @@ function FeaturesStep({ formData, updateFormData }) {
                     label="Email-Prompt"
                     value={formData.features?.email_capture_config?.prompt || ''}
                     onChange={(e) => handleEmailCaptureChange('prompt', e.target.value)}
+                    helperText="Die Nachricht, die der Bot anzeigt, um nach der E-Mail zu fragen."
                     sx={{ mb: 2 }}
                   />
 
                   <TextField
                     fullWidth
-                    label="Trigger-Keywords"
+                    label="Trigger-Keywords (kommagetrennt)"
                     value={formData.features?.email_capture_config?.trigger_keywords?.join(', ') || ''}
-                    onChange={(e) => handleEmailCaptureChange('trigger_keywords', e.target.value.split(', '))}
+                    onChange={(e) => handleEmailCaptureChange('trigger_keywords', e.target.value.split(',').map(k => k.trim()))}
                     placeholder="preise, angebot, kontakt"
+                    helperText="Wörter, die die E-Mail-Abfrage auslösen."
                     sx={{ mb: 2 }}
                   />
 
@@ -100,7 +116,8 @@ function FeaturesStep({ formData, updateFormData }) {
                     label="Nach X Nachrichten fragen"
                     value={formData.features?.email_capture_config?.after_messages || 3}
                     onChange={(e) => handleEmailCaptureChange('after_messages', parseInt(e.target.value))}
-                    inputProps={{ min: 1, max: 10 }}
+                    inputProps={{ min: 1, max: 20 }}
+                    helperText="Automatische Abfrage nach einer bestimmten Anzahl von Nachrichten."
                   />
                 </Box>
               )}
@@ -108,6 +125,57 @@ function FeaturesStep({ formData, updateFormData }) {
           </Card>
         </Grid>
 
+        {/* Contact Persons Card */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PeopleAlt /> Ansprechpartner-Anzeige
+              </Typography>
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.features?.contact_persons_enabled || false}
+                    onChange={(e) => handleFeaturesChange('contact_persons_enabled', e.target.checked)}
+                  />
+                }
+                label="Ansprechpartner-Modal aktivieren"
+                sx={{ mb: 2 }}
+              />
+
+              {formData.features?.contact_persons_enabled && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Zeigt ein Fenster mit den hinterlegten Kontaktdaten, wenn der Nutzer danach fragt.
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    label="Trigger-Keywords (kommagetrennt)"
+                    value={formData.features?.contact_persons_config?.trigger_keywords?.join(', ') || ''}
+                    onChange={(e) => handleContactPersonsChange('trigger_keywords', e.target.value.split(',').map(k => k.trim()))}
+                    placeholder="kontakt, ansprechpartner, hilfe"
+                    helperText="Wörter, die das Ansprechpartner-Fenster auslösen."
+                    sx={{ mb: 2 }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Nach X Nachrichten anzeigen"
+                    value={formData.features?.contact_persons_config?.after_messages || 5}
+                    onChange={(e) => handleContactPersonsChange('after_messages', parseInt(e.target.value))}
+                    inputProps={{ min: 1, max: 20 }}
+                    helperText="Automatische Anzeige nach einer bestimmten Anzahl von Nachrichten."
+                  />
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Behavior Settings Card */}
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -174,7 +242,8 @@ function FeaturesStep({ formData, updateFormData }) {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        {/* Custom Instructions Card */}
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -184,11 +253,12 @@ function FeaturesStep({ formData, updateFormData }) {
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={11}
                 label="Spezielle Anweisungen"
                 value={formData.features?.behavior_settings?.custom_instructions || ''}
                 onChange={(e) => handleBehaviorChange('custom_instructions', e.target.value)}
                 placeholder="z.B. 'Betone immer unsere 24/7-Verfügbarkeit', 'Erwähne unser kostenloses Beratungsgespräch'"
+                helperText="Geben Sie dem Bot spezifische Verhaltensregeln oder Informationen, die er immer beachten soll."
               />
             </CardContent>
           </Card>

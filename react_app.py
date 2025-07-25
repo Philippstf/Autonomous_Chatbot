@@ -535,6 +535,14 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         email_capture_enabled = features.get('email_capture_enabled', False)
         contact_persons_enabled = features.get('contact_persons_enabled', False)
         
+        # Debug logging for trigger analysis
+        logger.info(f"🔍 TRIGGER DEBUG - Chatbot: {chatbot_id}")
+        logger.info(f"Extended config keys: {list(extended_config.keys())}")
+        logger.info(f"Features: {features}")
+        logger.info(f"Email capture enabled: {email_capture_enabled}")
+        logger.info(f"Contact persons enabled: {contact_persons_enabled}")
+        logger.info(f"Contact persons data: {extended_config.get('contact_persons', [])}")
+        
         bot_response = response_data["response"]
         should_show_email_capture = False
         should_show_contact_persons = False
@@ -542,12 +550,18 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         # Email capture logic - only if enabled and not already captured in this conversation
         if email_capture_enabled:
             email_config = features.get('email_capture_config', {})
-            trigger_keywords = email_config.get('trigger_keywords', [])
+            trigger_keywords = email_config.get('trigger_keywords', ['preise', 'angebot', 'kontakt', 'beratung', 'demo'])  # Added fallback keywords
             after_messages = email_config.get('after_messages', 3)
+            
+            logger.info(f"📧 EMAIL CAPTURE - Config: {email_config}")
+            logger.info(f"📧 EMAIL CAPTURE - Keywords: {trigger_keywords}")
+            logger.info(f"📧 EMAIL CAPTURE - After messages: {after_messages}")
             
             # Check if email already captured in this conversation
             existing_leads = supabase_storage.supabase.table('leads').select("id").eq('conversation_id', conversation_id).execute()
             email_already_captured = len(existing_leads.data) > 0
+            
+            logger.info(f"📧 EMAIL CAPTURE - Already captured: {email_already_captured}")
             
             if not email_already_captured:
                 # Check message count in conversation
@@ -559,12 +573,24 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                 keyword_triggered = any(keyword.lower() in user_message_lower for keyword in trigger_keywords)
                 message_count_triggered = message_count >= after_messages * 2  # *2 because we count both user and bot messages
                 
+                logger.info(f"📧 EMAIL CAPTURE - User message: '{user_message_lower}'")
+                logger.info(f"📧 EMAIL CAPTURE - Message count: {message_count}")
+                logger.info(f"📧 EMAIL CAPTURE - Keyword triggered: {keyword_triggered}")
+                logger.info(f"📧 EMAIL CAPTURE - Message count triggered: {message_count_triggered}")
+                
                 if keyword_triggered or message_count_triggered:
                     should_show_email_capture = True
+                    logger.info(f"✅ EMAIL CAPTURE TRIGGERED!")
+                else:
+                    logger.info(f"❌ EMAIL CAPTURE NOT TRIGGERED")
         
         # Contact persons logic - only if enabled, contact persons exist, and not already shown in this conversation
         if contact_persons_enabled:
             contact_persons = extended_config.get('contact_persons', [])
+            
+            logger.info(f"👥 CONTACT PERSONS - Enabled: {contact_persons_enabled}")
+            logger.info(f"👥 CONTACT PERSONS - Count: {len(contact_persons)}")
+            logger.info(f"👥 CONTACT PERSONS - Data: {contact_persons}")
             
             if contact_persons:
                 # Check if contact persons already shown in this conversation
@@ -574,6 +600,8 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                     for msg in conversation_messages 
                     if msg.get('role') == 'assistant'
                 )
+                
+                logger.info(f"👥 CONTACT PERSONS - Already shown: {contact_already_shown}")
                 
                 if not contact_already_shown:
                     # Check message count and trigger keywords for contact persons
@@ -587,8 +615,19 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                     contact_keyword_triggered = any(keyword.lower() in user_message_lower for keyword in contact_trigger_keywords)
                     contact_message_count_triggered = len(conversation_messages) >= contact_after_messages * 2
                     
+                    logger.info(f"👥 CONTACT PERSONS - Config: {contact_config}")
+                    logger.info(f"👥 CONTACT PERSONS - Keywords: {contact_trigger_keywords}")
+                    logger.info(f"👥 CONTACT PERSONS - Message count: {len(conversation_messages)}")
+                    logger.info(f"👥 CONTACT PERSONS - Keyword triggered: {contact_keyword_triggered}")
+                    logger.info(f"👥 CONTACT PERSONS - Message count triggered: {contact_message_count_triggered}")
+                    
                     if contact_keyword_triggered or contact_message_count_triggered:
                         should_show_contact_persons = True
+                        logger.info(f"✅ CONTACT PERSONS TRIGGERED!")
+                    else:
+                        logger.info(f"❌ CONTACT PERSONS NOT TRIGGERED")
+            else:
+                logger.info(f"❌ CONTACT PERSONS - No contact persons configured")
         
         # Save bot response to conversation history
         supabase_storage.save_conversation_message(
