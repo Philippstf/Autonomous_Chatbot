@@ -594,7 +594,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         
         # Contact persons logic - only if enabled, contact persons exist, and not already shown in this conversation
         if contact_persons_enabled:
-            contact_persons = extended_config.get('contact_persons', [])
+            contact_persons = getattr(chatbot_config, 'branding', {}).get('contact_persons', [])
             
             logger.info(f"👥 CONTACT PERSONS - Enabled: {contact_persons_enabled}")
             logger.info(f"👥 CONTACT PERSONS - Count: {len(contact_persons)}")
@@ -674,7 +674,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         if should_show_contact_persons:
             metadata.update({
                 'show_contact_persons': True,
-                'contact_persons': extended_config.get('contact_persons', [])
+                'contact_persons': getattr(chatbot_config, 'branding', {}).get('contact_persons', [])
             })
         
         if metadata:
