@@ -531,118 +531,70 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             conversation_id=conversation_id
         )
         
-        # Get chatbot features for email capture logic - check extended_config first
-        extended_config = getattr(chatbot_config, 'extended_config', {}) or {}
-        features = extended_config.get('features', {})
+        # 🚀 VuBot 3.0 - ULTRA-EINFACHE Modal-Trigger-Logik
         
-        # Fallback to branding for backward compatibility
-        if not features:
-            features = getattr(chatbot_config, 'branding', {}).get('features', {})
+        # Einheitlich nur aus branding lesen (keine extended_config mehr)
+        branding = getattr(chatbot_config, 'branding', {})
+        features = branding.get('features', {})
+        contact_persons = branding.get('contact_persons', [])
         
+        # Simple Feature-Flags
         email_capture_enabled = features.get('email_capture_enabled', False)
-        contact_persons_enabled = features.get('contact_persons_enabled', False)
+        contact_persons_enabled = features.get('contact_persons_enabled', False) and len(contact_persons) > 0
         
-        # Debug logging for trigger analysis
-        logger.info(f"🔍 TRIGGER DEBUG - Chatbot: {chatbot_id}")
-        logger.info(f"Extended config keys: {list(extended_config.keys())}")
-        logger.info(f"Features: {features}")
-        logger.info(f"Email capture enabled: {email_capture_enabled}")
-        logger.info(f"Contact persons enabled: {contact_persons_enabled}")
-        logger.info(f"Contact persons data: {extended_config.get('contact_persons', [])}")
+        # Debug logging (vereinfacht)
+        logger.info(f"🚀 VuBot 3.0 - Chatbot: {chatbot_id}")
+        logger.info(f"📧 Email enabled: {email_capture_enabled}")
+        logger.info(f"👥 Contact enabled: {contact_persons_enabled} (persons: {len(contact_persons)})")
         
         bot_response = response_data["response"]
-        should_show_email_capture = False
-        should_show_contact_persons = False
         
-        # Email capture logic - only if enabled and not already captured in this conversation
-        if email_capture_enabled:
-            email_config = features.get('email_capture_config', {})
-            trigger_keywords = email_config.get('trigger_keywords', [
-                'preise', 'angebot', 'kontakt', 'beratung', 'demo', 'email', 'mail', 
-                'hinterlassen', 'erreichen', 'kontaktieren', 'anfrage', 'interesse',
-                'informationen', 'details', 'preis', 'kosten', 'termin'
-            ])
-            after_messages = email_config.get('after_messages', 3)
-            
-            logger.info(f"📧 EMAIL CAPTURE - Config: {email_config}")
-            logger.info(f"📧 EMAIL CAPTURE - Keywords: {trigger_keywords}")
-            logger.info(f"📧 EMAIL CAPTURE - After messages: {after_messages}")
-            
-            # Check if email already captured in this conversation
+        # NEUE EINFACHE TRIGGER-LOGIK (nur Keywords, keine Message-Counts)
+        user_message_lower = message.message.lower()
+        
+        # Email Modal Trigger
+        email_keywords = ['email', 'e-mail', 'kontakt', 'angebot', 'beratung', 'preise', 'hinterlassen']
+        show_email_modal = (
+            email_capture_enabled and 
+            any(keyword in user_message_lower for keyword in email_keywords)
+        )
+        
+        # Contact Modal Trigger  
+        contact_keywords = ['ansprechpartner', 'kontakt', 'beratung', 'hilfe', 'support', 'sprechen']
+        show_contact_modal = (
+            contact_persons_enabled and 
+            any(keyword in user_message_lower for keyword in contact_keywords)
+        )
+        
+        logger.info(f"🔍 User message: '{user_message_lower}'")
+        logger.info(f"📧 Email modal trigger: {show_email_modal}")
+        logger.info(f"👥 Contact modal trigger: {show_contact_modal}")
+        
+        # 🚀 VuBot 3.0 - ULTRA-EINFACH: Prüfe nur ob bereits erfasst
+        if show_email_modal:
+            # Prüfe nur ob Email bereits erfasst wurde
             existing_leads = supabase_storage.supabase.table('leads').select("id").eq('conversation_id', conversation_id).execute()
-            email_already_captured = len(existing_leads.data) > 0
-            
-            logger.info(f"📧 EMAIL CAPTURE - Already captured: {email_already_captured}")
-            
-            if not email_already_captured:
-                # Check message count in conversation
-                messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
-                # Count only user messages
-                user_messages = [msg for msg in messages if msg.get('role') == 'user']
-                user_message_count = len(user_messages)
-                
-                # Check if should trigger email capture
-                user_message_lower = message.message.lower()
-                keyword_triggered = any(keyword.lower() in user_message_lower for keyword in trigger_keywords)
-                message_count_triggered = user_message_count >= after_messages
-                
-                logger.info(f"📧 EMAIL CAPTURE - User message: '{user_message_lower}'")
-                logger.info(f"📧 EMAIL CAPTURE - User message count: {user_message_count}")
-                logger.info(f"📧 EMAIL CAPTURE - Total messages: {len(messages)}")
-                logger.info(f"📧 EMAIL CAPTURE - Keyword triggered: {keyword_triggered}")
-                logger.info(f"📧 EMAIL CAPTURE - Message count triggered: {message_count_triggered}")
-                logger.info(f"📧 EMAIL CAPTURE - After messages threshold: {after_messages}")
-                
-                if keyword_triggered or message_count_triggered:
-                    should_show_email_capture = True
-                    logger.info(f"✅ EMAIL CAPTURE TRIGGERED!")
-                else:
-                    logger.info(f"❌ EMAIL CAPTURE NOT TRIGGERED")
-        
-        # Contact persons logic - only if enabled, contact persons exist, and not already shown in this conversation
-        if contact_persons_enabled:
-            contact_persons = getattr(chatbot_config, 'branding', {}).get('contact_persons', [])
-            
-            logger.info(f"👥 CONTACT PERSONS - Enabled: {contact_persons_enabled}")
-            logger.info(f"👥 CONTACT PERSONS - Count: {len(contact_persons)}")
-            logger.info(f"👥 CONTACT PERSONS - Data: {contact_persons}")
-            
-            if contact_persons:
-                # Check if contact persons already shown in this conversation
-                conversation_messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
-                contact_already_shown = any(
-                    msg.get('metadata', {}).get('contact_persons_shown', False) 
-                    for msg in conversation_messages 
-                    if msg.get('role') == 'assistant'
-                )
-                
-                logger.info(f"👥 CONTACT PERSONS - Already shown: {contact_already_shown}")
-                
-                if not contact_already_shown:
-                    # Check message count and trigger keywords for contact persons
-                    contact_config = features.get('contact_persons_config', {})
-                    contact_trigger_keywords = contact_config.get('trigger_keywords', 
-                        ['kontakt', 'ansprechpartner', 'beratung', 'hilfe', 'support', 'sprechen'])
-                    contact_after_messages = contact_config.get('after_messages', 5)
-                    
-                    # Check for trigger conditions
-                    user_message_lower = message.message.lower()
-                    contact_keyword_triggered = any(keyword.lower() in user_message_lower for keyword in contact_trigger_keywords)
-                    contact_message_count_triggered = len(conversation_messages) >= contact_after_messages * 2
-                    
-                    logger.info(f"👥 CONTACT PERSONS - Config: {contact_config}")
-                    logger.info(f"👥 CONTACT PERSONS - Keywords: {contact_trigger_keywords}")
-                    logger.info(f"👥 CONTACT PERSONS - Message count: {len(conversation_messages)}")
-                    logger.info(f"👥 CONTACT PERSONS - Keyword triggered: {contact_keyword_triggered}")
-                    logger.info(f"👥 CONTACT PERSONS - Message count triggered: {contact_message_count_triggered}")
-                    
-                    if contact_keyword_triggered or contact_message_count_triggered:
-                        should_show_contact_persons = True
-                        logger.info(f"✅ CONTACT PERSONS TRIGGERED!")
-                    else:
-                        logger.info(f"❌ CONTACT PERSONS NOT TRIGGERED")
+            if len(existing_leads.data) > 0:
+                show_email_modal = False  # Bereits erfasst
+                logger.info(f"📧 Email bereits erfasst - Modal wird nicht angezeigt")
             else:
-                logger.info(f"❌ CONTACT PERSONS - No contact persons configured")
+                logger.info(f"✅ EMAIL MODAL WIRD ANGEZEIGT!")
+        
+        # 🚀 VuBot 3.0 - ULTRA-EINFACH: Contact Modal nur einmal pro Session zeigen
+        if show_contact_modal:
+            # Prüfe ob bereits in dieser Session gezeigt
+            conversation_messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
+            contact_already_shown = any(
+                msg.get('metadata', {}).get('contact_persons_shown', False) 
+                for msg in conversation_messages 
+                if msg.get('role') == 'assistant'
+            )
+            
+            if contact_already_shown:
+                show_contact_modal = False  # Bereits gezeigt
+                logger.info(f"👥 Contact Modal bereits gezeigt - wird nicht angezeigt")
+            else:
+                logger.info(f"✅ CONTACT MODAL WIRD ANGEZEIGT!")
         
         # Save bot response to conversation history
         supabase_storage.save_conversation_message(
@@ -653,8 +605,8 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             content=bot_response,
             metadata={
                 "timestamp": datetime.now().isoformat(),
-                "email_capture_shown": should_show_email_capture,
-                "contact_persons_shown": should_show_contact_persons,
+                "email_capture_shown": show_email_modal,
+                "contact_persons_shown": show_contact_modal,
                 "sources": response_data.get("sources", [])
             }
         )
@@ -667,22 +619,24 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
             timestamp=datetime.now()
         )
         
-        # Add email capture and/or contact persons prompts if needed
+        # 🚀 VuBot 3.0 - ULTRA-EINFACHE Response Metadata
         metadata = {}
         
-        if should_show_email_capture:
+        if show_email_modal:
             email_prompt = features.get('email_capture_config', {}).get('prompt', 
                 'Für detaillierte Informationen können Sie gerne Ihre Email-Adresse hinterlassen.')
             metadata.update({
-                'show_email_capture': True,
+                'show_email_modal': True,  # Neue eindeutige Namen
                 'email_prompt': email_prompt
             })
+            logger.info(f"📧 Email Modal Metadata hinzugefügt")
         
-        if should_show_contact_persons:
+        if show_contact_modal:
             metadata.update({
-                'show_contact_persons': True,
-                'contact_persons': getattr(chatbot_config, 'branding', {}).get('contact_persons', [])
+                'show_contact_modal': True,  # Neue eindeutige Namen
+                'contact_persons': contact_persons
             })
+            logger.info(f"👥 Contact Modal Metadata hinzugefügt")
         
         if metadata:
             chat_response.metadata = metadata

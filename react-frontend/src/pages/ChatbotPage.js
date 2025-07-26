@@ -136,23 +136,21 @@ function ChatbotPage() {
 
       setMessages(prev => [...prev, botMessage]);
       
-      // Debug logging für modal triggers
-      console.log('🔍 Frontend Debug - Response metadata:', response.metadata);
-      console.log('🔍 Frontend Debug - Show email capture:', response.metadata?.show_email_capture);
-      console.log('🔍 Frontend Debug - Show contact persons:', response.metadata?.show_contact_persons);
-      console.log('🔍 Frontend Debug - Current showEmailCapture state:', showEmailCapture);
-      console.log('🔍 Frontend Debug - Current showContactPersons state:', showContactPersons);
+      // 🚀 VuBot 3.0 - ULTRA-EINFACHE Modal-Trigger
+      console.log('🚀 VuBot 3.0 - Response metadata:', response.metadata);
+      console.log('📧 Show email modal:', response.metadata?.show_email_modal);
+      console.log('👥 Show contact modal:', response.metadata?.show_contact_modal);
       
-      // Check for email capture trigger
-      if (response.metadata?.show_email_capture && !showEmailCapture) {
-        console.log('✅ Triggering email capture modal');
+      // Email Modal Trigger (neue Namen!)
+      if (response.metadata?.show_email_modal) {
+        console.log('✅ EMAIL MODAL TRIGGERED!');
         setShowEmailCapture(true);
         setEmailCapturePrompt(response.metadata.email_prompt || 'Möchten Sie weitere Informationen erhalten?');
       }
       
-      // Check for contact persons trigger
-      if (response.metadata?.show_contact_persons && !showContactPersons) {
-        console.log('✅ Triggering contact persons modal');
+      // Contact Modal Trigger (neue Namen!)
+      if (response.metadata?.show_contact_modal) {
+        console.log('✅ CONTACT MODAL TRIGGERED!');
         setShowContactPersons(true);
       }
     } catch (error) {
