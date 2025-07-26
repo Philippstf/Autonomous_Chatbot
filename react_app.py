@@ -493,17 +493,24 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         
         rag_system = active_chats[chatbot_id]
         
-        # Get chatbot owner for conversation tracking
-        chatbot_config = chatbot_factory.load_chatbot_config(chatbot_id)
-        if not chatbot_config:
-            raise HTTPException(status_code=404, detail="Chatbot config not found")
-        
-        # Find chatbot owner
-        user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id").eq('id', chatbot_id).execute()
+        # Find chatbot owner and get config from Supabase
+        user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id, config_data").eq('id', chatbot_id).execute()
         if not user_chatbots.data:
             raise HTTPException(status_code=404, detail="Chatbot owner not found")
         
         owner_user_id = user_chatbots.data[0]['user_id']
+        config_data = user_chatbots.data[0]['config_data']
+        
+        # Create chatbot_config object from Supabase data
+        from utils.chatbot_factory import ChatbotConfig
+        chatbot_config = ChatbotConfig(
+            id=chatbot_id,
+            name=config_data.get('name', ''),
+            description=config_data.get('description', ''),
+            branding=config_data.get('branding', {}),
+            website_url=config_data.get('website_url'),
+            extended_config=config_data.get('extended_config', {})
+        )
         
         # Generate conversation_id if not provided
         conversation_id = message.conversation_id or str(uuid.uuid4())
