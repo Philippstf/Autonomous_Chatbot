@@ -42,7 +42,17 @@ function ChatbotPage() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState(null);
+  const [conversationId, setConversationId] = useState(() => {
+    // Generiere oder lade persistente conversationId für diese Session
+    const storageKey = `conversation_${chatbotId}`;
+    const stored = sessionStorage.getItem(storageKey);
+    if (stored) {
+      return stored;
+    }
+    const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem(storageKey, newId);
+    return newId;
+  });
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [emailCapturePrompt, setEmailCapturePrompt] = useState('');
   const [emailFormData, setEmailFormData] = useState({ email: '', name: '', phone: '', message: '' });
@@ -117,14 +127,23 @@ function ChatbotPage() {
 
       setMessages(prev => [...prev, botMessage]);
       
+      // Debug logging für modal triggers
+      console.log('🔍 Frontend Debug - Response metadata:', response.metadata);
+      console.log('🔍 Frontend Debug - Show email capture:', response.metadata?.show_email_capture);
+      console.log('🔍 Frontend Debug - Show contact persons:', response.metadata?.show_contact_persons);
+      console.log('🔍 Frontend Debug - Current showEmailCapture state:', showEmailCapture);
+      console.log('🔍 Frontend Debug - Current showContactPersons state:', showContactPersons);
+      
       // Check for email capture trigger
       if (response.metadata?.show_email_capture && !showEmailCapture) {
+        console.log('✅ Triggering email capture modal');
         setShowEmailCapture(true);
         setEmailCapturePrompt(response.metadata.email_prompt || 'Möchten Sie weitere Informationen erhalten?');
       }
       
       // Check for contact persons trigger
       if (response.metadata?.show_contact_persons && !showContactPersons) {
+        console.log('✅ Triggering contact persons modal');
         setShowContactPersons(true);
       }
     } catch (error) {
