@@ -43,15 +43,17 @@ function ChatbotPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(() => {
-    // Generiere oder lade persistente conversationId für diese Session
+    // FIXED: Generiere eine feste conversationId die NIEMALS wechselt
     const storageKey = `conversation_${chatbotId}`;
-    const stored = sessionStorage.getItem(storageKey);
-    if (stored) {
-      return stored;
+    let stored = sessionStorage.getItem(storageKey);
+    if (!stored) {
+      stored = `fixed_${chatbotId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem(storageKey, stored);
+      console.log('🔍 Frontend - Generated NEW fixed conversationId:', stored);
+    } else {
+      console.log('🔍 Frontend - Loaded EXISTING conversationId:', stored);
     }
-    const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    sessionStorage.setItem(storageKey, newId);
-    return newId;
+    return stored;
   });
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [emailCapturePrompt, setEmailCapturePrompt] = useState('');
@@ -110,11 +112,18 @@ function ChatbotPage() {
     setIsLoading(true);
 
     try {
+      console.log('🔍 Frontend - Sending with conversationId:', conversationId);
       const response = await sendChatMessage(chatbotId, userMessage.content, conversationId);
+      console.log('🔍 Frontend - Response conversation_id:', response.conversation_id);
       
-      if (!conversationId) {
-        setConversationId(response.conversation_id);
-      }
+      // NICHT MEHR NÖTIG - conversationId ist immer gesetzt
+      // if (!conversationId) {
+      //   console.log('🔍 Frontend - Setting new conversationId:', response.conversation_id);
+      //   setConversationId(response.conversation_id);
+      //   // Update session storage
+      //   const storageKey = `conversation_${chatbotId}`;
+      //   sessionStorage.setItem(storageKey, response.conversation_id);
+      // }
 
       const botMessage = {
         id: (Date.now() + 1).toString(),
