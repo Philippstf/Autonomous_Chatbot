@@ -28,8 +28,17 @@ const ProtectedRoute = () => {
     );
   }
 
-  // Redirect to auth page if not authenticated
+  // Debug logging
+  console.log('ProtectedRoute - User:', user?.email, 'Verified:', user?.emailVerified, 'Loading:', loading);
+
+  // Redirect to auth page if not authenticated or email not verified
   if (!user) {
+    console.log('Redirecting: No user');
+    return <Navigate to="/auth?mode=login" state={{ from: location }} replace />;
+  }
+
+  if (!user.emailVerified) {
+    console.log('Redirecting: Email not verified');
     return <Navigate to="/auth?mode=login" state={{ from: location }} replace />;
   }
 

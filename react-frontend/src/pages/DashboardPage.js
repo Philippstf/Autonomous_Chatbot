@@ -29,13 +29,15 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+// import api from '../services/api';
+import { chatbotRegistryService } from '../services/firebaseService';
+import { authService } from '../services/authService';
 
 const DashboardPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   const [stats, setStats] = useState({
     totalChatbots: 0,
@@ -48,31 +50,47 @@ const DashboardPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError('');
       
-      // Fetch analytics data
-      const analyticsResponse = await api.get('/analytics/overview');
-      setStats({
-        totalChatbots: analyticsResponse.data.total_chatbots || 0,
-        totalConversations: analyticsResponse.data.total_conversations || 0,
-        totalDocuments: analyticsResponse.data.total_documents || 0,
-        activeChatbots: analyticsResponse.data.active_chatbots || 0
-      });
-      
-      // Fetch chatbots for recent chatbots section
-      if (analyticsResponse.data.total_chatbots > 0) {
-        const chatbotsResponse = await api.get('/chatbots');
-        setChatbots(chatbotsResponse.data.chatbots || []);
+      if (!user) {
+        setError('Bitte melden Sie sich an, um das Dashboard zu sehen.');
+        return;
       }
       
+      // Create user profile if it doesn't exist (with token refresh)
+      try {
+        await user.reload();
+        await user.getIdToken(true); // Force token refresh
+        await authService.createUserProfile(user);
+      } catch (profileError) {
+        console.warn('Profile creation failed:', profileError);
+        // Continue anyway - profile is not critical for dashboard
+      }
+      
+      // Fetch user's chatbots from Firebase
+      const chatbots = await chatbotRegistryService.getChatbotsByUser(user.uid);
+      
+      setStats({
+        totalChatbots: chatbots.length,
+        totalConversations: 0, // TODO: Calculate from conversations
+        totalDocuments: chatbots.reduce((sum, bot) => sum + (bot.documentCount || 0), 0),
+        activeChatbots: chatbots.filter(bot => bot.status === 'active').length
+      });
+      
+      // Set recent chatbots (last 3)
+      setChatbots(chatbots.slice(0, 3));
+      
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      setError('Dashboard-Daten konnten nicht geladen werden');
+      console.error('Error fetching dashboard data:', error);
+      setError('Dashboard-Daten konnten nicht geladen werden: ' + error.message);
     } finally {
       setLoading(false);
     }

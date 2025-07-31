@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Helper function to check if user is owner of chatbot
+    function isChatbotOwner(chatbotId) {
+      return exists(/databases/$(database)/documents/chatbot_registry/$(chatbotId)) &&
+             get(/databases/$(database)/documents/chatbot_registry/$(chatbotId)).data.creatorUserId == request.auth.uid;
+    }
+
+    // Profiles - allow all operations for authenticated users
+    match /profiles/{userId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Chatbot Registry - users can only manage their own chatbots
+    match /chatbot_registry/{chatbotId} {
+      allow read, write, create, update, delete: if request.auth != null && 
+        (resource == null || resource.data.creatorUserId == request.auth.uid || 
+         request.resource.data.creatorUserId == request.auth.uid);
+    }
+
+    // Chatbot Configs - users can only manage their own configs
+    match /chatbot_configs/{configId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // Conversations - only owners of chatbots can access conversations
+    match /conversations/{conversationId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Messages - only owners of chatbots can access messages
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        (resource == null || 
+         exists(/databases/$(database)/documents/conversations/$(resource.data.conversationId)) &&
+         isChatbotOwner(get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.chatbotId));
+      allow create: if isAuthenticated() && 
+        exists(/databases/$(database)/documents/conversations/$(request.resource.data.conversationId)) &&
+        isChatbotOwner(get(/databases/$(database)/documents/conversations/$(request.resource.data.conversationId)).data.chatbotId);
+    }
+
+    // Leads - only owners of chatbots can access leads
+    match /leads/{leadId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Captured Leads - only owners of chatbots can access captured leads
+    match /captured_leads/{leadId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Contact Persons - only owners of chatbots can manage contact persons
+    match /contact_persons/{contactId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Contact Requests - only owners of chatbots can access contact requests
+    match /contact_requests/{requestId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Analytics - only owners of chatbots can access analytics
+    match /chatbot_analytics/{analyticsId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Platform Analytics - only owners of chatbots can access platform analytics
+    match /platform_analytics/{analyticsId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Chatbot Sources - only owners of chatbots can manage sources
+    match /chatbot_sources/{sourceId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Conversation Logs - only owners of chatbots can access conversation logs
+    match /conversation_logs/{logId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || isChatbotOwner(resource.data.chatbotId));
+      allow create: if isAuthenticated() && 
+        isChatbotOwner(request.resource.data.chatbotId);
+    }
+
+    // Default deny all other documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -31,7 +31,8 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { getAllChatbots, deleteChatbot } from '../services/api';
+import { chatbotRegistryService } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext';
 
 function ChatbotListPage() {
   const navigate = useNavigate();
@@ -41,15 +42,21 @@ function ChatbotListPage() {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [selectedChatbot, setSelectedChatbot] = React.useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const { user } = useAuth();
 
   const {
     data: chatbotsData,
     isLoading,
     error,
     refetch,
-  } = useQuery('chatbots', getAllChatbots, {
-    refetchInterval: 30000,
-  });
+  } = useQuery(
+    ['chatbots', user?.uid], 
+    () => user ? chatbotRegistryService.getChatbotsByUser(user.uid) : Promise.resolve([]),
+    {
+      refetchInterval: 30000,
+      enabled: !!user,
+    }
+  );
 
   const handleMenuOpen = (event, chatbot) => {
     setAnchorEl(event.currentTarget);
@@ -64,7 +71,7 @@ function ChatbotListPage() {
   const handleDelete = async () => {
     if (selectedChatbot) {
       try {
-        await deleteChatbot(selectedChatbot.config.id);
+        await chatbotRegistryService.deleteChatbot(selectedChatbot.id);
         refetch();
         setDeleteDialogOpen(false);
         handleMenuClose();
@@ -95,11 +102,11 @@ function ChatbotListPage() {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ flexGrow: 1 }}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
-                🤖 {chatbot.config.name}
+                🤖 {chatbot.config?.name || chatbot.name || 'Unbenannter Chatbot'}
               </Typography>
               <Chip
-                label={chatbot.runtime_status?.loaded ? 'Active' : 'Inactive'}
-                color={chatbot.runtime_status?.loaded ? 'success' : 'default'}
+                label={chatbot.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+                color={chatbot.status === 'active' ? 'success' : 'default'}
                 size="small"
               />
             </Box>
@@ -128,29 +135,27 @@ function ChatbotListPage() {
               minHeight: '2.5em',
             }}
           >
-            {chatbot.config.description || 'No description provided'}
+            {chatbot.config?.description || chatbot.description || 'Keine Beschreibung verfügbar'}
           </Typography>
 
           {/* Stats */}
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Documents
+                Dokumente
               </Typography>
               <Typography variant="body2" fontWeight={600}>
-                {chatbot.rag_info?.total_chunks || 0}
+                {chatbot.documentCount || 0}
               </Typography>
             </Box>
-            {chatbot.config.website_url && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Website
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  Connected
-                </Typography>
-              </Box>
-            )}
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Chunks
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {chatbot.totalChunks || 0}
+              </Typography>
+            </Box>
           </Box>
 
           {/* Actions */}
@@ -161,7 +166,7 @@ function ChatbotListPage() {
               startIcon={<ChatIcon />}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/chatbot/${chatbot.config.id}`);
+                navigate(`/chatbot/${chatbot.config?.id || chatbot.id}`);
               }}
               sx={{ flexGrow: 1 }}
             >
@@ -173,16 +178,17 @@ function ChatbotListPage() {
               startIcon={<LaunchIcon />}
               onClick={(e) => {
                 e.stopPropagation();
-                window.open(chatbot.runtime_status?.frontend_url, '_blank');
+                // TODO: Add frontend URL when available
+                console.log('Open chatbot:', chatbot.id);
               }}
             >
-              Open
+              Öffnen
             </Button>
           </Box>
 
           {/* Footer */}
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-            Created: {new Date(chatbot.config.created_at).toLocaleDateString()}
+            Erstellt: {chatbot.created_at ? new Date(chatbot.created_at.seconds ? chatbot.created_at.seconds * 1000 : chatbot.created_at).toLocaleDateString('de-DE') : 'Unbekannt'}
           </Typography>
         </CardContent>
       </Card>
@@ -238,7 +244,7 @@ function ChatbotListPage() {
               color="text.secondary"
               sx={{ display: { xs: 'none', sm: 'block' } }}
             >
-              {chatbotsData ? `${chatbotsData.total} chatbot(s), ${chatbotsData.active} active` : 'Loading...'}
+              {chatbotsData ? `${chatbotsData.length} Chatbot(s)` : 'Wird geladen...'}
             </Typography>
           </Box>
           <Box sx={{ 
@@ -307,10 +313,10 @@ function ChatbotListPage() {
               </Grid>
             ))}
           </Grid>
-        ) : chatbotsData?.chatbots?.length > 0 ? (
+        ) : chatbotsData?.length > 0 ? (
           <Grid container spacing={{ xs: 2, sm: 3 }}>
-            {chatbotsData.chatbots.map((chatbot) => (
-              <Grid item xs={12} sm={6} lg={4} key={chatbot.config.id}>
+            {chatbotsData.map((chatbot) => (
+              <Grid item xs={12} sm={6} lg={4} key={chatbot.id}>
                 <ChatbotCard chatbot={chatbot} />
               </Grid>
             ))}
@@ -365,12 +371,12 @@ function ChatbotListPage() {
       >
         <MenuItem
           onClick={() => {
-            navigate(`/chatbot/${selectedChatbot?.config.id}`);
+            navigate(`/chatbot/${selectedChatbot?.config?.id || selectedChatbot?.id}`);
             handleMenuClose();
           }}
         >
           <ChatIcon sx={{ mr: 1 }} />
-          Open Chat
+          Chat öffnen
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -379,16 +385,17 @@ function ChatbotListPage() {
           }}
         >
           <EditIcon sx={{ mr: 1 }} />
-          Edit Settings
+          Einstellungen bearbeiten
         </MenuItem>
         <MenuItem
           onClick={() => {
-            window.open(selectedChatbot?.runtime_status?.frontend_url, '_blank');
+            // TODO: Add frontend URL when available
+            console.log('Open chatbot in new tab:', selectedChatbot?.id);
             handleMenuClose();
           }}
         >
           <LaunchIcon sx={{ mr: 1 }} />
-          Open in New Tab
+          In neuem Tab öffnen
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -397,23 +404,23 @@ function ChatbotListPage() {
           sx={{ color: 'error.main' }}
         >
           <DeleteIcon sx={{ mr: 1 }} />
-          Delete
+          Löschen
         </MenuItem>
       </Menu>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Chatbot</DialogTitle>
+        <DialogTitle>Chatbot löschen</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{selectedChatbot?.config.name}"? 
-            This action cannot be undone.
+            Sind Sie sicher, dass Sie "{selectedChatbot?.config?.name || selectedChatbot?.name}" löschen möchten? 
+            Diese Aktion kann nicht rückgängig gemacht werden.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Abbrechen</Button>
           <Button onClick={handleDelete} color="error" variant="contained">
-            Delete
+            Löschen
           </Button>
         </DialogActions>
       </Dialog>

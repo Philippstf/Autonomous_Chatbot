@@ -13,13 +13,14 @@ import {
   Link
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { supabase } from '../config/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import BetaDisclaimerModal from '../components/BetaDisclaimerModal';
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState(searchParams.get('mode') || 'login');
+  const { signIn, signUp, resetPassword, signOut, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -34,14 +35,10 @@ const AuthPage = () => {
 
   useEffect(() => {
     // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        navigate('/dashboard');
-      }
-    };
-    checkUser();
-  }, [navigate]);
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -57,23 +54,14 @@ const AuthPage = () => {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
+      const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) throw error;
 
       if (data.user) {
-        // Check if user has accepted beta disclaimer before
-        const hasAcceptedDisclaimer = localStorage.getItem(`beta_accepted_${data.user.id}`);
-        
-        if (!hasAcceptedDisclaimer) {
-          setPendingAuth({ type: 'login', user: data.user });
-          setShowBetaDisclaimer(true);
-        } else {
-          navigate('/dashboard');
-        }
+        // For Firebase: User is now logged in automatically
+        // Skip beta disclaimer for now - go directly to dashboard
+        navigate('/dashboard');
       }
     } catch (error) {
       setError(error.message);
@@ -100,27 +88,23 @@ const AuthPage = () => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name || formData.email.split('@')[0]
-          }
-        }
+      const { data, error } = await signUp(formData.email, formData.password, {
+        name: formData.name || formData.email.split('@')[0]
       });
 
       if (error) throw error;
 
       if (data.user) {
-        if (data.user.email_confirmed_at) {
-          // User is immediately confirmed - show beta disclaimer for new users
-          setPendingAuth({ type: 'register', user: data.user });
-          setShowBetaDisclaimer(true);
-        } else {
-          // User needs to confirm email first
-          setSuccess('Registrierung erfolgreich! Bitte prüfen Sie Ihr Email-Postfach zur Bestätigung.');
+        if (data.needsEmailVerification) {
+          // Show success message for registration
+          setSuccess('Registrierung erfolgreich! Bitte prüfen Sie Ihr Email-Postfach zur Bestätigung, bevor Sie sich anmelden.');
           setMode('login');
+          
+          // Clear form
+          setFormData({ email: '', password: '', confirmPassword: '', name: '' });
+        } else {
+          // User is immediately verified (rare case)
+          navigate('/dashboard');
         }
       }
     } catch (error) {
@@ -140,9 +124,7 @@ const AuthPage = () => {
     setError('');
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await resetPassword(formData.email);
 
       if (error) throw error;
 
@@ -157,7 +139,7 @@ const AuthPage = () => {
   const handleBetaDisclaimerAccept = () => {
     if (pendingAuth && pendingAuth.user) {
       // Store acceptance in localStorage
-      localStorage.setItem(`beta_accepted_${pendingAuth.user.id}`, 'true');
+      localStorage.setItem(`beta_accepted_${pendingAuth.user.uid}`, 'true');
       
       // Navigate to dashboard
       setShowBetaDisclaimer(false);
@@ -169,7 +151,11 @@ const AuthPage = () => {
   const handleBetaDisclaimerDecline = async () => {
     if (pendingAuth && pendingAuth.user) {
       // Sign out the user if they decline
-      await supabase.auth.signOut();
+      try {
+        await signOut();
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
       
       // Reset state
       setShowBetaDisclaimer(false);

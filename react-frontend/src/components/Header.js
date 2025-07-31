@@ -1,5 +1,5 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -9,14 +9,24 @@ import {
   IconButton,
   Avatar,
   Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
   AccountCircle as AccountCircleIcon,
   Brightness4 as Brightness4Icon,
   Menu as MenuIcon,
+  Logout as LogoutIcon,
+  Settings as SettingsIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/authService';
 
 const pageConfig = {
   '/': {
@@ -53,6 +63,9 @@ const pageConfig = {
 
 function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [anchorEl, setAnchorEl] = useState(null);
   
   // Get current page config or default
   const currentPage = pageConfig[location.pathname] || {
@@ -68,6 +81,43 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
     currentPage.subtitle = `Chat with AI Assistant`;
     currentPage.emoji = '💬';
   }
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.signOut();
+      navigate('/auth?mode=login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+    handleMenuClose();
+  };
+
+  const handleProfile = () => {
+    navigate('/settings');
+    handleMenuClose();
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    const name = user.displayName || user.email;
+    if (name) {
+      const parts = name.split(' ');
+      if (parts.length > 1) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return name[0].toUpperCase();
+    }
+    return 'U';
+  };
 
   return (
     <AppBar
@@ -203,9 +253,10 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
                 </IconButton>
               </Tooltip>
 
-              <Tooltip title="Account">
+              <Tooltip title="Konto">
                 <IconButton
                   color="inherit"
+                  onClick={handleMenuOpen}
                   sx={{
                     color: 'text.secondary',
                     '&:hover': {
@@ -221,9 +272,10 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
                       background: 'linear-gradient(135deg, #1f3a93, #34495e)',
                       fontSize: '14px',
                       fontWeight: 600,
+                      cursor: 'pointer',
                     }}
                   >
-                    U
+                    {getUserInitials()}
                   </Avatar>
                 </IconButton>
               </Tooltip>
@@ -231,6 +283,83 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
           </Box>
         </motion.div>
       </Toolbar>
+      
+      {/* User Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        onClick={handleMenuClose}
+        PaperProps={{
+          elevation: 3,
+          sx: {
+            overflow: 'visible',
+            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+            mt: 1.5,
+            minWidth: 200,
+            '& .MuiAvatar-root': {
+              width: 32,
+              height: 32,
+              ml: -0.5,
+              mr: 1,
+            },
+            '&:before': {
+              content: '""',
+              display: 'block',
+              position: 'absolute',
+              top: 0,
+              right: 14,
+              width: 10,
+              height: 10,
+              bgcolor: 'background.paper',
+              transform: 'translateY(-50%) rotate(45deg)',
+              zIndex: 0,
+            },
+          },
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => {}}>
+          <ListItemIcon>
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                background: 'linear-gradient(135deg, #1f3a93, #34495e)',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+            >
+              {getUserInitials()}
+            </Avatar>
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" fontWeight={600}>
+              {user?.displayName || user?.email?.split('@')[0] || 'Benutzer'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {user?.email}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+        
+        <Divider />
+        
+        <MenuItem onClick={handleProfile}>
+          <ListItemIcon>
+            <SettingsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Einstellungen</ListItemText>
+        </MenuItem>
+        
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Abmelden</ListItemText>
+        </MenuItem>
+      </Menu>
     </AppBar>
   );
 }
