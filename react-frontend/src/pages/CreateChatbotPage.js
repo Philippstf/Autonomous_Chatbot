@@ -209,7 +209,29 @@ function CreateChatbotPage() {
       }
 
       // 2️⃣ Parallel: Speichere Referenz in Firebase (für Management)
-      const firebaseData = {
+      // WICHTIG: Entferne File-Objekte für Firebase (werden nur an Railway gesendet)
+      
+      // Hilfsfunktion: Entferne alle File-Objekte und andere problematische Objekte
+      const cleanDataForFirebase = (obj) => {
+        if (obj === null || obj === undefined) return obj;
+        if (typeof obj !== 'object') return obj;
+        if (obj instanceof File) return null; // File-Objekte entfernen
+        if (obj instanceof Date) return obj.toISOString(); // Dates zu Strings
+        if (Array.isArray(obj)) {
+          return obj.map(item => cleanDataForFirebase(item)).filter(item => item !== null);
+        }
+        
+        const cleanedObj = {};
+        for (const [key, value] of Object.entries(obj)) {
+          const cleanedValue = cleanDataForFirebase(value);
+          if (cleanedValue !== null) {
+            cleanedObj[key] = cleanedValue;
+          }
+        }
+        return cleanedObj;
+      };
+      
+      const rawFirebaseData = {
         config: {
           id: finalChatbotId, // Verwende Railway ID!
           name: formData.name,
@@ -218,13 +240,13 @@ function CreateChatbotPage() {
           manual_text: formData.manual_text || null,
           created_at: new Date().toISOString(),
         },
-        branding: formData.branding,
-        company_info: formData.company_info,
-        features: formData.features,
-        contact_persons: formData.contact_persons,
-        behavior_settings: formData.features.behavior_settings,
+        branding: cleanDataForFirebase(formData.branding),
+        company_info: cleanDataForFirebase(formData.company_info),
+        features: cleanDataForFirebase(formData.features),
+        contact_persons: cleanDataForFirebase(formData.contact_persons),
+        behavior_settings: cleanDataForFirebase(formData.features?.behavior_settings),
         status: 'active',
-        documentCount: 0,
+        documentCount: formData.uploaded_files ? formData.uploaded_files.length : 0,
         totalChunks: 0,
         ragInfo: {},
         runtime_status: {
@@ -232,8 +254,14 @@ function CreateChatbotPage() {
         },
         // Wichtig: Railway-Referenz speichern
         railwayBotId: finalChatbotId,
-        isHybrid: true
+        isHybrid: true,
+        // Speichere nur Dateinamen, NICHT die File-Objekte
+        uploadedFileNames: formData.uploaded_files ? 
+          formData.uploaded_files.map(file => file.name) : []
       };
+      
+      // Nochmals bereinigen für absolute Sicherheit
+      const firebaseData = cleanDataForFirebase(rawFirebaseData);
 
       console.log('💾 Saving chatbot reference to Firebase:', firebaseData);
       await chatbotRegistryService.createChatbot(user.uid, firebaseData);
