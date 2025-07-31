@@ -12,7 +12,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Depends, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
@@ -24,8 +24,8 @@ from utils.chatbot_factory import ChatbotFactory, ChatbotConfig
 from utils.multi_source_rag import MultiSourceRAG
 from utils.pdf_processor import document_processor
 
-# Import Supabase authentication and storage
-from utils.supabase_auth import get_current_user
+# Import Firebase authentication and Supabase storage
+from utils.firebase_auth import get_current_user, get_current_user_hybrid
 from utils.supabase_storage import SupabaseStorage
 
 # Load environment variables
@@ -179,7 +179,7 @@ async def health_check():
 # ─── Chatbot Management Endpoints ────────────────────────────────────────────
 
 @app.get("/api/chatbots")
-async def get_all_chatbots(current_user: dict = Depends(get_current_user)):
+async def get_all_chatbots(current_user: dict = Depends(get_current_user_hybrid)):
     """Get all chatbots for current user"""
     try:
         user_id = current_user.get("id")
@@ -211,7 +211,7 @@ async def get_all_chatbots(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/chatbots/{chatbot_id}")
-async def get_chatbot(chatbot_id: str, current_user: dict = Depends(get_current_user)):
+async def get_chatbot(chatbot_id: str, current_user: dict = Depends(get_current_user_hybrid)):
     """Get specific chatbot for current user"""
     try:
         user_id = current_user.get("id")
@@ -244,9 +244,10 @@ async def get_chatbot(chatbot_id: str, current_user: dict = Depends(get_current_
 @app.post("/api/chatbots")
 async def create_chatbot(
     background_tasks: BackgroundTasks,
+    http_request: Request,
     request: str = Form(...),
     files: Optional[List[UploadFile]] = File(None),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user_hybrid)
 ):
     """Create new chatbot for current user"""
     try:

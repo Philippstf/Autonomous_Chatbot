@@ -79,11 +79,18 @@ export const chatbotRegistryService = {
   async getChatbotsByUser(userId) {
     const q = query(
       collection(db, COLLECTIONS.CHATBOT_REGISTRY),
-      where('creatorUserId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('creatorUserId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const chatbots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Sort on client side if createdAt exists
+    return chatbots.sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      const aTime = a.createdAt.seconds || a.createdAt;
+      const bTime = b.createdAt.seconds || b.createdAt;
+      return bTime - aTime; // Descending order
+    });
   },
 
   async getChatbot(chatbotId) {

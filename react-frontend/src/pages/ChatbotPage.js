@@ -31,7 +31,9 @@ import {
   Launch as LaunchIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getChatConfig, sendChatMessage, submitLead } from '../services/api';
+import { chatbotRegistryService } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext';
+import { sendChatMessage, submitLead } from '../services/api'; // Reaktiviere echte Chat-API
 import ContactPersonModal from '../components/ContactPersonModal';
 
 function ChatbotPage() {
@@ -39,6 +41,7 @@ function ChatbotPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -66,15 +69,27 @@ function ChatbotPage() {
     data: chatConfig,
     isLoading: configLoading,
     error: configError,
-  } = useQuery(['chatConfig', chatbotId], () => getChatConfig(chatbotId));
+  } = useQuery(
+    ['chatConfig', chatbotId], 
+    () => chatbotRegistryService.getChatbot(chatbotId),
+    {
+      enabled: !!chatbotId,
+      retry: 2
+    }
+  );
 
   useEffect(() => {
     if (chatConfig) {
+      const botName = chatConfig.config?.name || chatConfig.name || 'Ihr Chatbot';
+      const welcomeMessage = chatConfig.features?.welcome_message || 
+                           chatConfig.welcome_message || 
+                           `Hallo! Ich bin ${botName}. Wie kann ich Ihnen helfen?`;
+      
       setMessages([
         {
           id: 'welcome',
           type: 'bot',
-          content: chatConfig.welcome_message || `Hallo! Ich bin ${chatConfig.name}.`,
+          content: welcomeMessage,
           timestamp: new Date(),
         },
       ]);
@@ -112,21 +127,17 @@ function ChatbotPage() {
     setIsLoading(true);
 
     try {
-      console.log('🔍 Frontend - Sending with conversationId:', conversationId);
-      const response = await sendChatMessage(chatbotId, userMessage.content, conversationId);
-      console.log('🔍 Frontend - Response conversation_id:', response.conversation_id);
+      // ✅ ECHTE CHAT-ENGINE REAKTIVIERT - nutzt Railway Backend + RAG System
+      console.log('💬 Sending message to REAL chat engine:', userMessage.content);
+      console.log('🔍 ChatbotId for API:', chatbotId);
+      console.log('🔍 ConversationId:', conversationId);
       
-      // NICHT MEHR NÖTIG - conversationId ist immer gesetzt
-      // if (!conversationId) {
-      //   console.log('🔍 Frontend - Setting new conversationId:', response.conversation_id);
-      //   setConversationId(response.conversation_id);
-      //   // Update session storage
-      //   const storageKey = `conversation_${chatbotId}`;
-      //   sessionStorage.setItem(storageKey, response.conversation_id);
-      // }
-
+      // Verwende echte Railway API für Chat
+      const response = await sendChatMessage(chatbotId, userMessage.content, conversationId);
+      console.log('🚀 Real API Response:', response);
+      
       const botMessage = {
-        id: (Date.now() + 1).toString(),
+        id: (Date.now() + 1).toString(),  
         type: 'bot',
         content: response.response,
         sources: response.sources || [],
@@ -136,19 +147,19 @@ function ChatbotPage() {
 
       setMessages(prev => [...prev, botMessage]);
       
-      // 🚀 VuBot 3.0 - ULTRA-EINFACHE Modal-Trigger
+      // 🚀 VuBot 3.0 - ULTRA-EINFACHE Modal-Trigger (REAKTIVIERT)
       console.log('🚀 VuBot 3.0 - Response metadata:', response.metadata);
       console.log('📧 Show email modal:', response.metadata?.show_email_modal);
       console.log('👥 Show contact modal:', response.metadata?.show_contact_modal);
       
-      // Email Modal Trigger (neue Namen!)
+      // Email Modal Trigger (reaktiviert!)
       if (response.metadata?.show_email_modal) {
         console.log('✅ EMAIL MODAL TRIGGERED!');
         setShowEmailCapture(true);
         setEmailCapturePrompt(response.metadata.email_prompt || 'Möchten Sie weitere Informationen erhalten?');
       }
       
-      // Contact Modal Trigger (neue Namen!)
+      // Contact Modal Trigger (reaktiviert!)
       if (response.metadata?.show_contact_modal) {
         console.log('✅ CONTACT MODAL TRIGGERED!');
         setShowContactPersons(true);
@@ -183,6 +194,8 @@ function ChatbotPage() {
         lead_source: 'chat_capture'
       };
 
+      // ✅ ECHTE LEAD-SUBMISSION REAKTIVIERT
+      console.log('📧 Submitting lead to real API:', leadData);
       const response = await submitLead(chatbotId, leadData);
       
       // Add confirmation message to chat
@@ -473,7 +486,7 @@ function ChatbotPage() {
                   {
                     id: 'welcome',
                     type: 'bot',
-                    content: chatConfig.welcome_message || `Hallo! Ich bin ${chatConfig.name}.`,
+                    content: chatConfig.features?.welcome_message || chatConfig.welcome_message || `Hallo! Ich bin ${chatConfig.config?.name || chatConfig.name || 'Ihr Chatbot'}.`,
                     timestamp: new Date(),
                   },
                 ]);
@@ -492,7 +505,7 @@ function ChatbotPage() {
           </Box>
           {chatConfig?.company_info?.company_name && (
             <Chip
-              label={chatConfig.company_info.company_name}
+              label={chatConfig.company_info?.company_name || chatConfig.config?.name || 'Chatbot'}
               sx={{
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 color: 'white',

@@ -22,23 +22,44 @@ import {
   People as PeopleIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { getAnalyticsOverview, getAllChatbots } from '../services/api';
+import { chatbotRegistryService } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext';
 
 function AnalyticsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
-  const {
-    data: analyticsData,
-    isLoading: analyticsLoading,
-    error: analyticsError,
-  } = useQuery('analytics', getAnalyticsOverview);
+  const { user } = useAuth();
 
+  // Get user's chatbots to calculate analytics
   const {
     data: chatbotsData,
     isLoading: chatbotsLoading,
     error: chatbotsError,
-  } = useQuery('chatbots', getAllChatbots);
+  } = useQuery(
+    ['chatbots', user?.uid], 
+    () => user ? chatbotRegistryService.getChatbotsByUser(user.uid) : Promise.resolve([]),
+    {
+      enabled: !!user,
+    }
+  );
+
+  // Calculate analytics from chatbots data
+  const analyticsData = React.useMemo(() => {
+    if (!chatbotsData) return null;
+    
+    return {
+      totalChatbots: chatbotsData.length,
+      activeChatbots: chatbotsData.filter(bot => bot.status === 'active').length,
+      totalDocuments: chatbotsData.reduce((sum, bot) => sum + (bot.documentCount || 0), 0),
+      totalChunks: chatbotsData.reduce((sum, bot) => sum + (bot.totalChunks || 0), 0),
+      avgResponseTime: '1.2s', // Placeholder
+      totalMessages: 0, // Placeholder - would need to query messages collection
+    };
+  }, [chatbotsData]);
+
+  const analyticsLoading = chatbotsLoading;
+  const analyticsError = chatbotsError;
 
   const MetricCard = ({ title, value, change, icon, color = 'primary', loading = false }) => (
     <Card sx={{ height: '100%' }}>
@@ -113,38 +134,36 @@ function AnalyticsPage() {
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6" fontWeight={600}>
-            🤖 {chatbot.config.name}
+            🤖 {chatbot.config?.name || chatbot.name || 'Unbenannter Chatbot'}
           </Typography>
           <Chip
-            label={chatbot.runtime_status?.loaded ? 'Active' : 'Inactive'}
-            color={chatbot.runtime_status?.loaded ? 'success' : 'default'}
+            label={chatbot.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+            color={chatbot.status === 'active' ? 'success' : 'default'}
             size="small"
           />
         </Box>
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Documents Processed
+            Dokumente verarbeitet
           </Typography>
           <Typography variant="h5" fontWeight={600}>
-            {chatbot.rag_info?.total_chunks || 0}
+            {chatbot.documentCount || 0}
           </Typography>
         </Box>
 
-        {chatbot.config.website_url && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Website Connected
-            </Typography>
-            <Typography variant="body2" fontWeight={500} color="success.main">
-              ✓ {new URL(chatbot.config.website_url).hostname}
-            </Typography>
-          </Box>
-        )}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Text-Chunks
+          </Typography>
+          <Typography variant="h5" fontWeight={600}>
+            {chatbot.totalChunks || 0}
+          </Typography>
+        </Box>
 
         <Box>
           <Typography variant="caption" color="text.secondary">
-            Created: {new Date(chatbot.config.created_at).toLocaleDateString()}
+            Erstellt: {chatbot.created_at ? new Date(chatbot.created_at.seconds ? chatbot.created_at.seconds * 1000 : chatbot.created_at).toLocaleDateString('de-DE') : 'Unbekannt'}
           </Typography>
         </Box>
       </CardContent>
@@ -191,16 +210,16 @@ function AnalyticsPage() {
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
-              title="Total Chatbots"
-              value={analyticsData?.total_chatbots || 0}
+              title="Gesamt Chatbots"
+              value={analyticsData?.totalChatbots || 0}
               icon={<SmartToyIcon />}
               loading={analyticsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
-              title="Active Chatbots"
-              value={analyticsData?.active_chatbots || 0}
+              title="Aktive Chatbots"
+              value={analyticsData?.activeChatbots || 0}
               icon={<SpeedIcon />}
               color="secondary"
               loading={analyticsLoading}
@@ -208,18 +227,17 @@ function AnalyticsPage() {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
-              title="Total Conversations"
-              value={analyticsData?.total_conversations || 0}
-              change="+12%"
-              icon={<ChatIcon />}
+              title="Dokumente"
+              value={analyticsData?.totalDocuments || 0}
+              icon={<DescriptionIcon />}
               loading={analyticsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
-              title="Documents Processed"
-              value={analyticsData?.total_documents || 0}
-              icon={<DescriptionIcon />}
+              title="Text-Chunks"
+              value={analyticsData?.totalChunks || 0}
+              icon={<ChatIcon />}
               color="accent"
               loading={analyticsLoading}
             />

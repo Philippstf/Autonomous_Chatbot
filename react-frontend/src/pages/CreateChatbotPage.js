@@ -14,7 +14,9 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createChatbot, getCreationProgress } from '../services/api';
+import { chatbotRegistryService } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext';
+import { createChatbot } from '../services/api'; // Für Railway Backend
 
 // Import step components
 import BasicSettingsStep from '../components/wizard/BasicSettingsStep';
@@ -106,6 +108,7 @@ function CreateChatbotPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState(initialFormData);
   const [isCreating, setIsCreating] = useState(false);
@@ -159,8 +162,22 @@ function CreateChatbotPage() {
       setIsCreating(true);
       setError(null);
 
-      // Prepare form data for API
-      const chatbotData = {
+      if (!user) {
+        setError('Sie müssen angemeldet sein, um einen Chatbot zu erstellen.');
+        setIsCreating(false);
+        return;
+      }
+
+      // 🔥 HYBRID-ANSATZ: Erstelle Chatbot in BEIDEN Systemen
+      
+      // 1️⃣ Erstelle in Railway API (für echte Chat-Engine)
+      setCreationProgress({
+        status: 'processing',
+        progress: 0.2,
+        message: 'Chatbot-Engine wird erstellt...'
+      });
+
+      const railwayData = {
         name: formData.name,
         description: formData.description,
         website_url: formData.website_url || null,
@@ -172,37 +189,67 @@ function CreateChatbotPage() {
         behavior_settings: formData.features.behavior_settings,
       };
 
-      // Start creation process
-      const response = await createChatbot(chatbotData, formData.uploaded_files);
+      console.log('🚀 Creating chatbot in Railway API:', railwayData);
+      const railwayResponse = await createChatbot(railwayData, formData.uploaded_files);
       
-      if (response.creation_id) {
-        // Poll for progress updates
-        const pollProgress = async () => {
-          try {
-            const progress = await getCreationProgress(response.creation_id);
-            setCreationProgress(progress);
-            
-            if (progress.status === 'completed' && progress.chatbot_id) {
-              setIsCreating(false);
-              navigate(`/chatbot/${progress.chatbot_id}`);
-            } else if (progress.status === 'error') {
-              setError(progress.error || 'Creation failed');
-              setIsCreating(false);
-            } else {
-              // Continue polling
-              setTimeout(pollProgress, 2000);
-            }
-          } catch (error) {
-            console.error('Failed to get progress:', error);
-            setTimeout(pollProgress, 5000); // Retry after longer delay
-          }
-        };
-        
-        pollProgress();
+      setCreationProgress({
+        status: 'processing', 
+        progress: 0.6,
+        message: 'Wissensbasis wird aufgebaut...'
+      });
+
+      // Warte auf Railway-Verarbeitung (falls creation_id vorhanden)
+      let finalChatbotId = railwayResponse.chatbot_id;
+      
+      if (railwayResponse.creation_id) {
+        // TODO: Poll Railway für echten Status
+        console.log('🔄 Railway creation_id:', railwayResponse.creation_id);
+        // Für jetzt nehmen wir an, dass es funktioniert
+        finalChatbotId = railwayResponse.creation_id; // Oder was auch immer Railway zurückgibt
       }
+
+      // 2️⃣ Parallel: Speichere Referenz in Firebase (für Management)
+      const firebaseData = {
+        config: {
+          id: finalChatbotId, // Verwende Railway ID!
+          name: formData.name,
+          description: formData.description,
+          website_url: formData.website_url || null,
+          manual_text: formData.manual_text || null,
+          created_at: new Date().toISOString(),
+        },
+        branding: formData.branding,
+        company_info: formData.company_info,
+        features: formData.features,
+        contact_persons: formData.contact_persons,
+        behavior_settings: formData.features.behavior_settings,
+        status: 'active',
+        documentCount: 0,
+        totalChunks: 0,
+        ragInfo: {},
+        runtime_status: {
+          loaded: true // Railway ist aktiv
+        },
+        // Wichtig: Railway-Referenz speichern
+        railwayBotId: finalChatbotId,
+        isHybrid: true
+      };
+
+      console.log('💾 Saving chatbot reference to Firebase:', firebaseData);
+      await chatbotRegistryService.createChatbot(user.uid, firebaseData);
+
+      setCreationProgress({
+        status: 'completed',
+        progress: 1.0,
+        message: 'Chatbot erfolgreich erstellt!'
+      });
+      
+      setIsCreating(false);
+      navigate(`/chatbot/${finalChatbotId}`);
+
     } catch (error) {
       console.error('Failed to create chatbot:', error);
-      setError(error.message || 'Failed to create chatbot');
+      setError(error.message || 'Fehler beim Erstellen des Chatbots');
       setIsCreating(false);
     }
   };

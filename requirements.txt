@@ -28,7 +28,8 @@ postgrest>=0.13.0
 python-dotenv>=1.0.0
 python-multipart==0.0.6
 
-# Authentication & Security (Supabase)
+# Authentication & Security (Firebase + Supabase)
+firebase-admin>=6.4.0
 supabase>=2.0.0
 email-validator>=2.0.0
 pydantic[email]>=2.0.0

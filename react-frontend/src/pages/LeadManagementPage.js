@@ -51,7 +51,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import { chatbotRegistryService, leadsService, conversationService } from '../services/firebaseService';
 
 const LeadManagementPage = () => {
   const theme = useTheme();
@@ -86,26 +86,29 @@ const LeadManagementPage = () => {
       setLoading(true);
       setError('');
       
-      // Fetch chatbots first
-      const chatbotsResponse = await api.get('/chatbots');
-      setChatbots(chatbotsResponse.data.chatbots || []);
+      if (!user) {
+        setError('Bitte melden Sie sich an.');
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch user's chatbots from Firebase
+      const userChatbots = await chatbotRegistryService.getChatbotsByUser(user.uid);
+      setChatbots(userChatbots || []);
       
       if (activeTab === 0) {
-        // Lead Generation Tab
-        const leadsEndpoint = selectedChatbot === 'all' ? '/leads' : `/chatbots/${selectedChatbot}/leads`;
-        const leadsResponse = await api.get(leadsEndpoint);
-        setLeads(leadsResponse.data.leads || []);
-        
-        // Calculate lead stats
-        calculateLeadStats(leadsResponse.data.leads || []);
+        // Lead Generation Tab - Placeholder data for now
+        const placeholderLeads = [];
+        setLeads(placeholderLeads);
+        calculateLeadStats(placeholderLeads);
       } else if (activeTab === 1) {
-        // Conversations Tab
-        if (selectedChatbot !== 'all') {
-          const conversationsResponse = await api.get(`/chatbots/${selectedChatbot}/conversations`);
-          setConversations(conversationsResponse.data.conversations || []);
-        } else {
-          setConversations([]);
-        }
+        // Conversations Tab - Placeholder data for now
+        setConversations([]);
+        setStats(prev => ({
+          ...prev,
+          totalConversations: 0,
+          avgConversationLength: 0
+        }));
       }
       
     } catch (error) {
@@ -141,7 +144,8 @@ const LeadManagementPage = () => {
 
   const handleLeadStatusChange = async (leadId, newStatus) => {
     try {
-      await api.put(`/leads/${leadId}/status?status=${newStatus}`);
+      // TODO: Implement lead status update with Firebase
+      console.log('Updating lead status:', leadId, newStatus);
       
       // Refresh leads data
       fetchData();
@@ -154,8 +158,9 @@ const LeadManagementPage = () => {
   const handleViewConversation = async (conversationId) => {
     try {
       setLoading(true);
-      const response = await api.get(`/chatbots/${selectedChatbot}/conversations/${conversationId}`);
-      setConversationDetail(response.data);
+      // TODO: Implement conversation loading with Firebase
+      console.log('Loading conversation:', conversationId);
+      setConversationDetail({ messages: [] }); // Placeholder
       setSelectedConversation(conversationId);
       setShowConversationDetail(true);
     } catch (error) {

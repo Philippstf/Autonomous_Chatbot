@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabase } from '../config/supabase';
+import { auth } from '../config/firebase';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -10,15 +10,32 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add Supabase auth token
+// Request interceptor - Firebase Authentication
 api.interceptors.request.use(
   async (config) => {
     console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
     
-    // Add Supabase auth token to requests
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        // Get Firebase ID token
+        const idToken = await currentUser.getIdToken();
+        config.headers.Authorization = `Bearer ${idToken}`;
+        console.log('🔑 Added Firebase ID token to Authorization header');
+        
+        // Also add custom headers as fallback
+        config.headers['X-Firebase-User'] = currentUser.uid;
+        config.headers['X-Firebase-Email'] = currentUser.email;
+        console.log('🔑 Added Firebase user info as custom headers (fallback)');
+      } catch (error) {
+        console.error('Failed to get Firebase ID token:', error);
+        // Still add custom headers as fallback
+        config.headers['X-Firebase-User'] = currentUser.uid;
+        config.headers['X-Firebase-Email'] = currentUser.email;
+        console.log('⚠️ Using Firebase custom headers as fallback');
+      }
+    } else {
+      console.warn('No authenticated user found for API request');
     }
     
     return config;
