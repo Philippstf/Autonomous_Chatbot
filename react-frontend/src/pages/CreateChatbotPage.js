@@ -190,22 +190,39 @@ function CreateChatbotPage() {
       };
 
       console.log('🚀 Creating chatbot in Railway API:', railwayData);
-      const railwayResponse = await createChatbot(railwayData, formData.uploaded_files);
       
-      setCreationProgress({
-        status: 'processing', 
-        progress: 0.6,
-        message: 'Wissensbasis wird aufgebaut...'
-      });
+      let railwayResponse = null;
+      let finalChatbotId = null;
+      
+      try {
+        railwayResponse = await createChatbot(railwayData, formData.uploaded_files);
+        console.log('✅ Railway response:', railwayResponse);
+        
+        setCreationProgress({
+          status: 'processing', 
+          progress: 0.6,
+          message: 'Wissensbasis wird aufgebaut...'
+        });
 
-      // Warte auf Railway-Verarbeitung (falls creation_id vorhanden)
-      let finalChatbotId = railwayResponse.chatbot_id;
-      
-      if (railwayResponse.creation_id) {
-        // TODO: Poll Railway für echten Status
-        console.log('🔄 Railway creation_id:', railwayResponse.creation_id);
-        // Für jetzt nehmen wir an, dass es funktioniert
-        finalChatbotId = railwayResponse.creation_id; // Oder was auch immer Railway zurückgibt
+        // Extract chatbot ID from Railway response
+        finalChatbotId = railwayResponse.chatbot_id || railwayResponse.creation_id || railwayResponse.id;
+        
+        if (railwayResponse.creation_id) {
+          console.log('🔄 Railway creation_id:', railwayResponse.creation_id);
+          finalChatbotId = railwayResponse.creation_id;
+        }
+      } catch (railwayError) {
+        console.error('❌ Railway backend failed:', railwayError);
+        console.warn('🔄 Falling back to Firebase-only mode (RAG system will be initialized on first chat)');
+        
+        // Generate a unique ID for Firebase-only mode
+        finalChatbotId = `fb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        setCreationProgress({
+          status: 'processing', 
+          progress: 0.6,
+          message: 'Chatbot wird im Firebase-Modus erstellt...'
+        });
       }
 
       // 2️⃣ Parallel: Speichere Referenz in Firebase (für Management)

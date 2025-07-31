@@ -485,11 +485,66 @@ async def delete_chatbot(chatbot_id: str):
 async def chat_with_bot(chatbot_id: str, message: ChatMessage):
     """Send message to chatbot with conversation tracking"""
     try:
+        logger.info(f"🔍 Chat request for chatbot_id: {chatbot_id}")
+        
         if chatbot_id not in active_chats:
             # Try to load chatbot
             rag_system = MultiSourceRAG(chatbot_id=chatbot_id)
+            logger.info(f"🔍 Checking RAG files: index={rag_system.index_file}, metadata={rag_system.metadata_file}")
+            logger.info(f"🔍 Index exists: {rag_system.index_file.exists()}, Metadata exists: {rag_system.metadata_file.exists()}")
+            
             if not (rag_system.index_file.exists() and rag_system.metadata_file.exists()):
-                raise HTTPException(status_code=404, detail="Chatbot not found or not initialized")
+                # Try to initialize RAG system on-demand from Supabase config
+                logger.warning(f"⚠️ RAG system not found for {chatbot_id}, trying on-demand initialization...")
+                
+                try:
+                    # Check if we have chatbot config in Supabase
+                    user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id, config_data").eq('id', chatbot_id).execute()
+                    if user_chatbots.data:
+                        config_data = user_chatbots.data[0]['config_data']
+                        logger.info(f"🔄 Found config for {chatbot_id}, initializing RAG system...")
+                        
+                        # Initialize RAG system with available data
+                        website_url = config_data.get('website_url')
+                        manual_text = config_data.get('manual_text')
+                        
+                        if website_url or manual_text:
+                            # Create RAG system on-demand
+                            success = rag_system.process_multiple_sources(
+                                website_url=website_url,
+                                manual_text=manual_text,
+                                progress_callback=lambda msg, progress: logger.info(f"RAG Progress: {msg} ({progress*100:.1f}%)")
+                            )
+                            
+                            if success:
+                                logger.info(f"✅ RAG system initialized on-demand for {chatbot_id}")
+                                active_chats[chatbot_id] = rag_system
+                            else:
+                                raise Exception("RAG initialization failed")
+                        else:
+                            # Create empty RAG system for text-only chatbot
+                            logger.info(f"📝 Creating text-only chatbot for {chatbot_id}")
+                            rag_system.process_multiple_sources(manual_text="This is a general assistant chatbot.")
+                            active_chats[chatbot_id] = rag_system
+                    else:
+                        raise Exception(f"No config found for chatbot {chatbot_id}")
+                        
+                except Exception as init_error:
+                    logger.error(f"❌ On-demand initialization failed for {chatbot_id}: {init_error}")
+                    error_details = {
+                        "chatbot_id": chatbot_id,
+                        "index_file": str(rag_system.index_file),
+                        "metadata_file": str(rag_system.metadata_file),
+                        "index_exists": rag_system.index_file.exists(),
+                        "metadata_exists": rag_system.metadata_file.exists(),
+                        "chatbot_dir": str(rag_system.chatbot_dir),
+                        "chatbot_dir_exists": rag_system.chatbot_dir.exists(),
+                        "init_error": str(init_error)
+                    }
+                    raise HTTPException(
+                        status_code=404, 
+                        detail=f"Chatbot not found and on-demand initialization failed. Debug: {error_details}"
+                    )
             active_chats[chatbot_id] = rag_system
         
         rag_system = active_chats[chatbot_id]
