@@ -28,8 +28,9 @@ class FirebaseStorageManager:
             if bucket_name:
                 self.bucket = storage.bucket(bucket_name)
             else:
-                # Standard Bucket verwenden
-                self.bucket = storage.bucket()
+                # Verwende expliziten Bucket-Namen für helferlain-a4178
+                default_bucket = "helferlain-a4178.firebasestorage.app"
+                self.bucket = storage.bucket(default_bucket)
             
             logger.info(f"✅ Firebase Storage initialized with bucket: {self.bucket.name}")
             
