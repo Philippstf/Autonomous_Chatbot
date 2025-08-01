@@ -24,25 +24,31 @@ class FirebaseStorageManager:
             bucket_name: Name des Firebase Storage Buckets (optional)
         """
         try:
-            # Firebase Storage Bucket initialisieren - immer expliziter Name
+            # Firebase Storage Bucket initialisieren
             bucket_name = bucket_name or "helferlain-a4178.firebasestorage.app"
             
-            # Versuche verschiedene Ansätze für Storage Bucket
+            # Einfacher direkter Ansatz: Forciere die Bucket-Erstellung
+            import firebase_admin
+            from firebase_admin import get_app
+            
             try:
-                # Ansatz 1: Mit explizitem bucket Namen
-                self.bucket = storage.bucket(bucket_name)
-                logger.info(f"✅ Firebase Storage initialized with explicit bucket: {self.bucket.name}")
-            except Exception as e1:
-                logger.warning(f"Explicit bucket failed: {e1}, trying app default...")
+                # Hole die aktuelle Firebase App
+                app = get_app()
+                logger.info(f"Using existing Firebase app: {app.project_id}")
+                
+                # Erstelle Storage-Referenz mit explizitem Bucket-Namen
+                self.bucket = storage.bucket(name=bucket_name, app=app)
+                logger.info(f"✅ Firebase Storage initialized with bucket: {bucket_name}")
+                
+            except Exception as app_error:
+                logger.error(f"Failed to get Firebase app: {app_error}")
+                # Als letzter Ausweg: Versuche direkt mit storage.bucket()
                 try:
-                    # Ansatz 2: Lade über default app
-                    from firebase_admin import get_app
-                    app = get_app()
-                    self.bucket = storage.bucket(bucket_name, app)
-                    logger.info(f"✅ Firebase Storage initialized via app reference: {self.bucket.name}")
-                except Exception as e2:
-                    logger.error(f"App-based bucket failed: {e2}")
-                    raise e2
+                    self.bucket = storage.bucket(name=bucket_name)
+                    logger.info(f"✅ Firebase Storage initialized directly with bucket: {bucket_name}")
+                except Exception as direct_error:
+                    logger.error(f"Direct storage initialization failed: {direct_error}")
+                    raise Exception(f"Cannot initialize Firebase Storage. App error: {app_error}, Direct error: {direct_error}")
             
         except Exception as e:
             logger.error(f"❌ Failed to initialize Firebase Storage: {e}")
