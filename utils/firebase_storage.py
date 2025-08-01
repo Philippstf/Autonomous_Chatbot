@@ -24,15 +24,25 @@ class FirebaseStorageManager:
             bucket_name: Name des Firebase Storage Buckets (optional)
         """
         try:
-            # Firebase Storage Bucket initialisieren
-            if bucket_name:
-                self.bucket = storage.bucket(bucket_name)
-            else:
-                # Verwende expliziten Bucket-Namen für helferlain-a4178
-                default_bucket = "helferlain-a4178.firebasestorage.app"
-                self.bucket = storage.bucket(default_bucket)
+            # Firebase Storage Bucket initialisieren - immer expliziter Name
+            bucket_name = bucket_name or "helferlain-a4178.firebasestorage.app"
             
-            logger.info(f"✅ Firebase Storage initialized with bucket: {self.bucket.name}")
+            # Versuche verschiedene Ansätze für Storage Bucket
+            try:
+                # Ansatz 1: Mit explizitem bucket Namen
+                self.bucket = storage.bucket(bucket_name)
+                logger.info(f"✅ Firebase Storage initialized with explicit bucket: {self.bucket.name}")
+            except Exception as e1:
+                logger.warning(f"Explicit bucket failed: {e1}, trying app default...")
+                try:
+                    # Ansatz 2: Lade über default app
+                    from firebase_admin import get_app
+                    app = get_app()
+                    self.bucket = storage.bucket(bucket_name, app)
+                    logger.info(f"✅ Firebase Storage initialized via app reference: {self.bucket.name}")
+                except Exception as e2:
+                    logger.error(f"App-based bucket failed: {e2}")
+                    raise e2
             
         except Exception as e:
             logger.error(f"❌ Failed to initialize Firebase Storage: {e}")
