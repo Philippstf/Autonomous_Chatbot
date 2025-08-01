@@ -24,9 +24,9 @@ from utils.chatbot_factory import ChatbotFactory, ChatbotConfig
 from utils.multi_source_rag import MultiSourceRAG
 from utils.pdf_processor import document_processor
 
-# Import Firebase authentication and Supabase storage
+# Import Firebase authentication and Firestore storage
 from utils.firebase_auth import get_current_user, get_current_user_hybrid
-from utils.supabase_storage import SupabaseStorage
+from utils.firestore_storage import FirestoreStorage
 
 # Load environment variables
 load_dotenv()
@@ -88,7 +88,7 @@ class ConversationMessage(BaseModel):
 # ─── Global Variables ────────────────────────────────────────────────────────
 
 chatbot_factory = None
-supabase_storage = None
+firestore_storage = None
 active_chats: Dict[str, MultiSourceRAG] = {}
 creation_progress: Dict[str, Dict] = {}
 
@@ -97,17 +97,17 @@ creation_progress: Dict[str, Dict] = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
-    global chatbot_factory, supabase_storage
+    global chatbot_factory, firestore_storage
     
     # Startup
     logger.info("🚀 Starting Chatbot Platform API...")
     
     # Initialize systems
     chatbot_factory = ChatbotFactory()
-    supabase_storage = SupabaseStorage()
+    firestore_storage = FirestoreStorage()
     
     # Initialize active chats dictionary (will be loaded per-user as needed)
-    logger.info("✅ Supabase storage initialized - chatbots will be loaded per-user")
+    logger.info("✅ Firestore storage initialized - chatbots will be loaded per-user")
     
     yield
     
@@ -187,7 +187,7 @@ async def get_all_chatbots(current_user: dict = Depends(get_current_user_hybrid)
             raise HTTPException(status_code=401, detail="User ID not found")
         
         # Get user-specific chatbots from Supabase
-        user_chatbots = supabase_storage.get_user_chatbots(user_id)
+        user_chatbots = firestore_storage.get_user_chatbots(user_id)
         
         # Add runtime status
         for chatbot in user_chatbots:
@@ -219,11 +219,11 @@ async def get_chatbot(chatbot_id: str, current_user: dict = Depends(get_current_
             raise HTTPException(status_code=401, detail="User ID not found")
         
         # Verify user owns this chatbot
-        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+        if not firestore_storage.user_owns_chatbot(user_id, chatbot_id):
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
         # Get chatbot from Supabase
-        chatbot = supabase_storage.get_chatbot_config(user_id, chatbot_id)
+        chatbot = firestore_storage.get_chatbot_config(user_id, chatbot_id)
         if not chatbot:
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
@@ -392,7 +392,7 @@ async def create_chatbot_background(
             chatbot_config = chatbot_factory.load_chatbot_config(chatbot_id)
             if chatbot_config:
                 # Store in Supabase with user_id
-                supabase_storage.create_chatbot_config(user_id, chatbot_config)
+                firestore_storage.create_chatbot_config(user_id, chatbot_config)
                 logger.info(f"✅ Stored chatbot {chatbot_id} for user {user_id}")
             
             progress_callback("Initializing chat system...", 0.9)
@@ -498,10 +498,16 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                 logger.warning(f"⚠️ RAG system not found for {chatbot_id}, trying on-demand initialization...")
                 
                 try:
-                    # Check if we have chatbot config in Supabase
-                    user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id, config_data").eq('id', chatbot_id).execute()
-                    if user_chatbots.data:
-                        config_data = user_chatbots.data[0]['config_data']
+                    # Check if we have chatbot config in Firestore
+                    # We need to find the owner first by checking all configs
+                    all_configs = firestore_storage.db.collection(firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']).where('id', '==', chatbot_id).stream()
+                    config_doc = None
+                    for doc in all_configs:
+                        config_doc = doc
+                        break
+                    
+                    if config_doc:
+                        config_data = config_doc.to_dict()
                         logger.info(f"🔄 Found config for {chatbot_id}, initializing RAG system...")
                         
                         # Initialize RAG system with available data
@@ -549,13 +555,18 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         
         rag_system = active_chats[chatbot_id]
         
-        # Find chatbot owner and get config from Supabase
-        user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id, config_data").eq('id', chatbot_id).execute()
-        if not user_chatbots.data:
+        # Find chatbot owner and get config from Firestore
+        all_configs = firestore_storage.db.collection(firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']).where('id', '==', chatbot_id).stream()
+        config_doc = None
+        for doc in all_configs:
+            config_doc = doc
+            break
+        
+        if not config_doc:
             raise HTTPException(status_code=404, detail="Chatbot owner not found")
         
-        owner_user_id = user_chatbots.data[0]['user_id']
-        config_data = user_chatbots.data[0]['config_data']
+        config_data = config_doc.to_dict()
+        owner_user_id = config_data['user_id']
         
         # Create chatbot_config object from Supabase data
         from utils.chatbot_factory import ChatbotConfig
@@ -572,7 +583,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         conversation_id = message.conversation_id or str(uuid.uuid4())
         
         # Save user message to conversation history
-        supabase_storage.save_conversation_message(
+        firestore_storage.save_conversation_message(
             user_id=owner_user_id,
             chatbot_id=chatbot_id,
             conversation_id=conversation_id,
@@ -629,8 +640,8 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         # 🚀 VuBot 3.0 - ULTRA-EINFACH: Prüfe nur ob bereits erfasst
         if show_email_modal:
             # Prüfe nur ob Email bereits erfasst wurde
-            existing_leads = supabase_storage.supabase.table('leads').select("id").eq('conversation_id', conversation_id).execute()
-            if len(existing_leads.data) > 0:
+            existing_leads = list(firestore_storage.db.collection(firestore_storage.COLLECTIONS['LEADS']).where('conversation_id', '==', conversation_id).stream())
+            if len(existing_leads) > 0:
                 show_email_modal = False  # Bereits erfasst
                 logger.info(f"📧 Email bereits erfasst - Modal wird nicht angezeigt")
             else:
@@ -639,7 +650,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         # 🚀 VuBot 3.0 - ULTRA-EINFACH: Contact Modal nur einmal pro Session zeigen
         if show_contact_modal:
             # Prüfe ob bereits in dieser Session gezeigt
-            conversation_messages = supabase_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
+            conversation_messages = firestore_storage.get_conversation_history(owner_user_id, chatbot_id, conversation_id)
             contact_already_shown = any(
                 msg.get('metadata', {}).get('contact_persons_shown', False) 
                 for msg in conversation_messages 
@@ -653,7 +664,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                 logger.info(f"✅ CONTACT MODAL WIRD ANGEZEIGT!")
         
         # Save bot response to conversation history
-        supabase_storage.save_conversation_message(
+        firestore_storage.save_conversation_message(
             user_id=owner_user_id,
             chatbot_id=chatbot_id,
             conversation_id=conversation_id,
@@ -710,26 +721,31 @@ async def submit_lead(chatbot_id: str, lead_data: LeadSubmission):
     """Submit lead for chatbot"""
     try:
         # Find chatbot owner
-        user_chatbots = supabase_storage.supabase.table('chatbot_configs').select("user_id").eq('id', chatbot_id).execute()
-        if not user_chatbots.data:
+        all_configs = firestore_storage.db.collection(firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']).where('id', '==', chatbot_id).stream()
+        config_doc = None
+        for doc in all_configs:
+            config_doc = doc
+            break
+        
+        if not config_doc:
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
-        owner_user_id = user_chatbots.data[0]['user_id']
+        owner_user_id = config_doc.to_dict()['user_id']
         
         # Check if lead already exists for this conversation
-        existing_leads = supabase_storage.supabase.table('leads').select("id").eq('conversation_id', lead_data.conversation_id).execute()
-        if existing_leads.data:
+        existing_leads = list(firestore_storage.db.collection(firestore_storage.COLLECTIONS['LEADS']).where('conversation_id', '==', lead_data.conversation_id).stream())
+        if existing_leads:
             raise HTTPException(status_code=409, detail="Lead already submitted for this conversation")
         
         # Create lead
-        lead_id = supabase_storage.create_lead(
+        lead_id = firestore_storage.create_lead(
             user_id=owner_user_id,
             chatbot_id=chatbot_id,
             lead_data=lead_data.dict()
         )
         
         # Save lead submission as conversation message
-        supabase_storage.save_conversation_message(
+        firestore_storage.save_conversation_message(
             user_id=owner_user_id,
             chatbot_id=chatbot_id,
             conversation_id=lead_data.conversation_id,
@@ -760,18 +776,22 @@ async def submit_lead(chatbot_id: str, lead_data: LeadSubmission):
 async def get_chat_config(chatbot_id: str):
     """Get chatbot configuration for frontend"""
     try:
-        # Lade die Config aus Supabase
-        result = supabase_storage.supabase.table('chatbot_configs').select("*").eq('id', chatbot_id).execute()
-        if not result.data:
+        # Lade die Config aus Firestore
+        all_configs = firestore_storage.db.collection(firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']).where('id', '==', chatbot_id).stream()
+        config_doc = None
+        for doc in all_configs:
+            config_doc = doc
+            break
+        
+        if not config_doc:
             raise HTTPException(status_code=404, detail="Chatbot config not found")
         
         # Konvertiere zu ChatbotConfig
-        row = result.data[0]
-        config_data = row['config_data']
+        config_data = config_doc.to_dict()
         config = ChatbotConfig(
-            id=row['id'],
-            name=row['name'],
-            description=row['description'],
+            id=config_data['id'],
+            name=config_data['name'],
+            description=config_data.get('description', ''),
             branding=config_data.get('branding', {}),
             website_url=config_data.get('website_url'),
             extended_config=config_data.get('extended_config', {})
@@ -848,13 +868,13 @@ async def get_user_leads(current_user: dict = Depends(get_current_user), limit: 
         if not user_id:
             raise HTTPException(status_code=401, detail="User ID not found")
         
-        leads = supabase_storage.get_user_leads(user_id, limit, offset)
+        leads = firestore_storage.get_user_leads(user_id, limit, offset)
         
         # Add chatbot name to each lead
         for lead in leads:
             chatbot_id = lead.get('chatbot_id')
             if chatbot_id:
-                chatbot = supabase_storage.get_chatbot_config(user_id, chatbot_id)
+                chatbot = firestore_storage.get_chatbot_config(user_id, chatbot_id)
                 if chatbot:
                     lead['chatbot_name'] = chatbot['config'].name
         
@@ -878,10 +898,10 @@ async def get_chatbot_leads(chatbot_id: str, current_user: dict = Depends(get_cu
             raise HTTPException(status_code=401, detail="User ID not found")
         
         # Verify user owns this chatbot
-        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+        if not firestore_storage.user_owns_chatbot(user_id, chatbot_id):
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
-        leads = supabase_storage.get_chatbot_leads(user_id, chatbot_id, limit, offset)
+        leads = firestore_storage.get_chatbot_leads(user_id, chatbot_id, limit, offset)
         
         return {
             "leads": leads,
@@ -906,16 +926,16 @@ async def get_chatbot_conversations(chatbot_id: str, current_user: dict = Depend
             raise HTTPException(status_code=401, detail="User ID not found")
         
         # Verify user owns this chatbot
-        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+        if not firestore_storage.user_owns_chatbot(user_id, chatbot_id):
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
-        conversations = supabase_storage.get_chatbot_conversations(user_id, chatbot_id, limit, offset)
+        conversations = firestore_storage.get_chatbot_conversations(user_id, chatbot_id, limit, offset)
         
         # Get detailed summary for each conversation
         detailed_conversations = []
         for conv in conversations:
             conv_id = conv['conversation_id']
-            summary = supabase_storage.get_conversation_summary(user_id, chatbot_id, conv_id)
+            summary = firestore_storage.get_conversation_summary(user_id, chatbot_id, conv_id)
             detailed_conversations.append(summary)
         
         return {
@@ -941,11 +961,11 @@ async def get_conversation_detail(chatbot_id: str, conversation_id: str, current
             raise HTTPException(status_code=401, detail="User ID not found")
         
         # Verify user owns this chatbot
-        if not supabase_storage.user_owns_chatbot(user_id, chatbot_id):
+        if not firestore_storage.user_owns_chatbot(user_id, chatbot_id):
             raise HTTPException(status_code=404, detail="Chatbot not found")
         
-        messages = supabase_storage.get_conversation_history(user_id, chatbot_id, conversation_id)
-        summary = supabase_storage.get_conversation_summary(user_id, chatbot_id, conversation_id)
+        messages = firestore_storage.get_conversation_history(user_id, chatbot_id, conversation_id)
+        summary = firestore_storage.get_conversation_summary(user_id, chatbot_id, conversation_id)
         
         return {
             "conversation_id": conversation_id,
@@ -973,7 +993,7 @@ async def update_lead_status(lead_id: str, status: str, current_user: dict = Dep
         if status not in valid_statuses:
             raise HTTPException(status_code=400, detail=f"Invalid status. Valid values: {valid_statuses}")
         
-        success = supabase_storage.update_lead_status(user_id, lead_id, status)
+        success = firestore_storage.update_lead_status(user_id, lead_id, status)
         
         if not success:
             raise HTTPException(status_code=404, detail="Lead not found or permission denied")
@@ -997,7 +1017,7 @@ async def get_analytics_overview(current_user: dict = Depends(get_current_user))
             raise HTTPException(status_code=401, detail="User ID not found")
         
         # Get user's chatbots from Supabase
-        user_chatbots = supabase_storage.get_user_chatbots(user_id)
+        user_chatbots = firestore_storage.get_user_chatbots(user_id)
         
         # Count active chats for this user
         user_active_count = sum(1 for bot in user_chatbots if bot["config"].id in active_chats)
@@ -1031,9 +1051,8 @@ async def get_analytics_overview(current_user: dict = Depends(get_current_user))
                 
                 # Count conversations for this chatbot
                 try:
-                    conversations_result = supabase.table('conversations').select('id').eq('user_id', user_id).execute()
-                    if conversations_result.data:
-                        total_conversations += len(conversations_result.data)
+                    conversations = firestore_storage.get_chatbot_conversations(user_id, chatbot['id'], limit=1000, offset=0)
+                    total_conversations += len(conversations)
                 except:
                     pass
                 
