@@ -14,6 +14,7 @@ from dataclasses import dataclass, asdict
 import shutil
 
 from .multi_source_rag import MultiSourceRAG, create_chatbot_id
+from .cloud_multi_source_rag import CloudMultiSourceRAG
 
 @dataclass
 class ChatbotConfig:
@@ -187,8 +188,8 @@ class ChatbotFactory:
                     document_chunks.extend(chunks)
                     config.documents.append(uploaded_file.name)
             
-            # Erstelle RAG-System
-            rag_system = MultiSourceRAG(chatbot_id)
+            # Erstelle Cloud-enabled RAG-System
+            rag_system = CloudMultiSourceRAG(chatbot_id, use_cloud_storage=True)
             
             if progress_callback:
                 progress_callback("Erstelle Wissensbasis...", 0.2)

@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 # Import existing utilities
 from utils.chatbot_factory import ChatbotFactory, ChatbotConfig
 from utils.multi_source_rag import MultiSourceRAG
+from utils.cloud_multi_source_rag import CloudMultiSourceRAG
 from utils.pdf_processor import document_processor
 
 # Import Firebase authentication and Firestore storage
@@ -397,10 +398,15 @@ async def create_chatbot_background(
             
             progress_callback("Initializing chat system...", 0.9)
             
-            rag_system = MultiSourceRAG(chatbot_id=chatbot_id)
-            if rag_system.index_file.exists() and rag_system.metadata_file.exists():
+            rag_system = CloudMultiSourceRAG(chatbot_id=chatbot_id, use_cloud_storage=True)
+            # Versuche RAG-System zu laden (lokal oder von Cloud)
+            try:
+                rag_system.load_rag_system()
                 active_chats[chatbot_id] = rag_system
                 logger.info(f"✅ Activated chatbot: {request.name} ({chatbot_id})")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to activate chatbot {chatbot_id}: {e}")
+                # Chatbot ist trotzdem erstellt, nur nicht sofort verfügbar
             
             # Update progress with completion
             creation_progress[creation_id] = {
@@ -488,14 +494,18 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         logger.info(f"🔍 Chat request for chatbot_id: {chatbot_id}")
         
         if chatbot_id not in active_chats:
-            # Try to load chatbot
-            rag_system = MultiSourceRAG(chatbot_id=chatbot_id)
+            # Try to load chatbot with Cloud Storage support
+            rag_system = CloudMultiSourceRAG(chatbot_id=chatbot_id, use_cloud_storage=True)
             logger.info(f"🔍 Checking RAG files: index={rag_system.index_file}, metadata={rag_system.metadata_file}")
             logger.info(f"🔍 Index exists: {rag_system.index_file.exists()}, Metadata exists: {rag_system.metadata_file.exists()}")
             
-            if not (rag_system.index_file.exists() and rag_system.metadata_file.exists()):
-                # Try to initialize RAG system on-demand from Supabase config
-                logger.warning(f"⚠️ RAG system not found for {chatbot_id}, trying on-demand initialization...")
+            # Try to load RAG system (locally or from Firebase Storage)
+            try:
+                rag_system.load_rag_system()
+                active_chats[chatbot_id] = rag_system
+                logger.info(f"✅ Successfully loaded chatbot {chatbot_id}")
+            except Exception as load_error:
+                logger.warning(f"⚠️ RAG system not found for {chatbot_id}, trying on-demand initialization... Error: {load_error}")
                 
                 try:
                     # Check if we have chatbot config in Firestore
@@ -537,16 +547,9 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                         
                 except Exception as init_error:
                     logger.error(f"❌ On-demand initialization failed for {chatbot_id}: {init_error}")
-                    error_details = {
-                        "chatbot_id": chatbot_id,
-                        "index_file": str(rag_system.index_file),
-                        "metadata_file": str(rag_system.metadata_file),
-                        "index_exists": rag_system.index_file.exists(),
-                        "metadata_exists": rag_system.metadata_file.exists(),
-                        "chatbot_dir": str(rag_system.chatbot_dir),
-                        "chatbot_dir_exists": rag_system.chatbot_dir.exists(),
-                        "init_error": str(init_error)
-                    }
+                    # Get comprehensive debug info from CloudMultiSourceRAG
+                    error_details = rag_system.get_debug_info()
+                    error_details["init_error"] = str(init_error)
                     raise HTTPException(
                         status_code=404, 
                         detail=f"Chatbot not found and on-demand initialization failed. Debug: {error_details}"
