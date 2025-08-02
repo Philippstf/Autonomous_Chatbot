@@ -183,7 +183,15 @@ class FirebaseStorageManager:
             True wenn erfolgreich, False sonst
         """
         try:
+            logger.info(f"🚀 Starting upload for chatbot {chatbot_id} from {local_chatbot_dir}")
+            
+            # Verify local directory exists
+            if not local_chatbot_dir.exists():
+                logger.error(f"❌ Local chatbot directory does not exist: {local_chatbot_dir}")
+                return False
+            
             success = True
+            uploaded_count = 0
             
             # Alle relevanten Dateien hochladen
             files_to_upload = [
@@ -193,18 +201,35 @@ class FirebaseStorageManager:
                 (local_chatbot_dir / "chunks/all_chunks.json", f"chatbots/{chatbot_id}/chunks/all_chunks.json")
             ]
             
-            for local_file, cloud_path in files_to_upload:
-                if local_file.exists():
-                    if not self.upload_file(local_file, cloud_path):
-                        success = False
-                else:
-                    logger.warning(f"Local file missing: {local_file}")
+            logger.info(f"📋 Attempting to upload {len(files_to_upload)} files for chatbot {chatbot_id}")
             
-            logger.info(f"✅ Chatbot {chatbot_id} files upload {'successful' if success else 'completed with errors'}")
+            for local_file, cloud_path in files_to_upload:
+                logger.info(f"📄 Processing file: {local_file} -> {cloud_path}")
+                
+                if local_file.exists():
+                    file_size = local_file.stat().st_size
+                    logger.info(f"📊 File {local_file.name} exists, size: {file_size} bytes")
+                    
+                    upload_result = self.upload_file(local_file, cloud_path)
+                    if upload_result:
+                        uploaded_count += 1
+                        logger.info(f"✅ Successfully uploaded {local_file.name}")
+                    else:
+                        success = False
+                        logger.error(f"❌ Failed to upload {local_file.name}")
+                else:
+                    logger.warning(f"⚠️ Local file missing: {local_file}")
+                    success = False
+            
+            final_status = "successful" if success else "completed with errors"
+            logger.info(f"📈 Upload summary for {chatbot_id}: {uploaded_count}/{len(files_to_upload)} files uploaded, status: {final_status}")
+            
             return success
             
         except Exception as e:
             logger.error(f"❌ Failed to upload chatbot files for {chatbot_id}: {e}")
+            import traceback
+            logger.error(f"📍 Stack trace: {traceback.format_exc()}")
             return False
     
     def download_chatbot_files(self, chatbot_id: str, local_chatbot_dir: Path) -> bool:

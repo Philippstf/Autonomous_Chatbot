@@ -39,9 +39,20 @@ class CloudMultiSourceRAG(MultiSourceRAG):
         super().__init__(chatbot_id)
         
         self.use_cloud_storage = use_cloud_storage
-        self.firebase_storage = get_firebase_storage() if use_cloud_storage else None
         
-        logger.info(f"🔧 CloudMultiSourceRAG initialized for {chatbot_id} (cloud: {use_cloud_storage})")
+        # Firebase Storage mit ausführlichem Logging initialisieren
+        if use_cloud_storage:
+            try:
+                logger.info(f"🔧 Initializing Firebase Storage for {chatbot_id}")
+                self.firebase_storage = get_firebase_storage()
+                logger.info(f"✅ Firebase Storage initialized successfully for {chatbot_id}")
+            except Exception as storage_error:
+                logger.error(f"❌ Firebase Storage initialization failed for {chatbot_id}: {storage_error}")
+                self.firebase_storage = None
+        else:
+            self.firebase_storage = None
+        
+        logger.info(f"🔧 CloudMultiSourceRAG initialized for {chatbot_id} (cloud: {use_cloud_storage}, storage_available: {self.firebase_storage is not None})")
     
     def process_multiple_sources(self, 
                                 website_url: Optional[str] = None,
@@ -64,22 +75,48 @@ class CloudMultiSourceRAG(MultiSourceRAG):
                 return False
             
             # Nach erfolgreicher lokaler Verarbeitung: Upload zu Firebase Storage
-            if self.use_cloud_storage and self.firebase_storage:
-                if progress_callback:
-                    progress_callback("Speichere zu Firebase Storage...", 0.95)
-                
-                upload_success = self.firebase_storage.upload_chatbot_files(
-                    self.chatbot_id, 
-                    self.chatbot_dir
-                )
-                
-                if upload_success:
-                    logger.info(f"✅ Chatbot {self.chatbot_id} files uploaded to Firebase Storage")
+            logger.info(f"🔍 Post-processing check: use_cloud_storage={self.use_cloud_storage}, firebase_storage_available={self.firebase_storage is not None}")
+            
+            if self.use_cloud_storage:
+                if self.firebase_storage is None:
+                    logger.error(f"❌ Firebase Storage is None for {self.chatbot_id} - cannot upload!")
                     if progress_callback:
-                        progress_callback("Erfolgreich in Cloud gespeichert!", 1.0)
+                        progress_callback("⚠️ Cloud Storage nicht verfügbar", 0.95)
                 else:
-                    logger.warning(f"⚠️ Failed to upload chatbot {self.chatbot_id} to Firebase Storage")
-                    # Trotzdem erfolgreich, da lokale Dateien existieren
+                    logger.info(f"🚀 Starting Firebase Storage upload for {self.chatbot_id}")
+                    if progress_callback:
+                        progress_callback("Speichere zu Firebase Storage...", 0.95)
+                    
+                    # Check local files before upload
+                    logger.info(f"📁 Checking local files in {self.chatbot_dir}")
+                    local_files_check = {
+                        "config.json": (self.chatbot_dir / "config.json").exists(),
+                        "index.faiss": (self.chatbot_dir / "embeddings/index.faiss").exists(),
+                        "meta.pkl": (self.chatbot_dir / "embeddings/meta.pkl").exists(),
+                        "all_chunks.json": (self.chatbot_dir / "chunks/all_chunks.json").exists()
+                    }
+                    logger.info(f"📋 Local files status: {local_files_check}")
+                    
+                    try:
+                        upload_success = self.firebase_storage.upload_chatbot_files(
+                            self.chatbot_id, 
+                            self.chatbot_dir
+                        )
+                        
+                        if upload_success:
+                            logger.info(f"✅ Chatbot {self.chatbot_id} files uploaded to Firebase Storage successfully")
+                            if progress_callback:
+                                progress_callback("Erfolgreich in Cloud gespeichert!", 1.0)
+                        else:
+                            logger.error(f"❌ Upload failed for chatbot {self.chatbot_id} - upload_chatbot_files returned False")
+                            if progress_callback:
+                                progress_callback("⚠️ Cloud-Upload fehlgeschlagen", 0.95)
+                    except Exception as upload_error:
+                        logger.error(f"❌ Upload exception for chatbot {self.chatbot_id}: {upload_error}")
+                        if progress_callback:
+                            progress_callback(f"⚠️ Upload-Fehler: {str(upload_error)}", 0.95)
+            else:
+                logger.info(f"ℹ️ Cloud storage disabled for {self.chatbot_id}")
             
             return True
             
