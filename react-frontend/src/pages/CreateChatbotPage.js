@@ -215,9 +215,9 @@ function CreateChatbotPage() {
           await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
           
           try {
-            const progressUrl = `${import.meta.env.VITE_RAILWAY_API_URL}/api/chatbots/creation/${creationId}/progress`;
-            const response = await fetch(progressUrl);
-            progressResponse = await response.json();
+            // Use the API service instead of manual fetch to include authentication
+            const { getCreationProgress } = await import('../services/api');
+            progressResponse = await getCreationProgress(creationId);
             
             console.log('📊 Progress update:', progressResponse);
             
@@ -248,6 +248,12 @@ function CreateChatbotPage() {
         }
       } catch (railwayError) {
         console.error('❌ Railway backend failed:', railwayError);
+        console.error('❌ Error details:', {
+          message: railwayError.message,
+          response: railwayError.response?.data,
+          status: railwayError.response?.status,
+          config: railwayError.config
+        });
         console.warn('🔄 Falling back to Firebase-only mode (RAG system will be initialized on first chat)');
         
         // Generate a unique ID for Firebase-only mode
