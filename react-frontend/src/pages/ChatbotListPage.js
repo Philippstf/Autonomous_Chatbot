@@ -401,7 +401,7 @@ function ChatbotListPage() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            const API_BASE = process.env.REACT_APP_API_BASE || 'https://api.helferlain.app';
+            const API_BASE = process.env.REACT_APP_API_BASE || 'https://helferlain-a4178.web.app';
             const publicUrl = `${API_BASE}/chat/${selectedChatbot?.id}`;
             window.open(publicUrl, '_blank', 'noopener,noreferrer');
             handleMenuClose();

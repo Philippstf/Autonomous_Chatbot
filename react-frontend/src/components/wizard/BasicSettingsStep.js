@@ -51,7 +51,35 @@ function BasicSettingsStep({ formData, updateFormData }) {
         sx={{ 
           mb: 3,
           '& .MuiInputBase-input': {
-            fontSize: { xs: '16px', sm: '14px' } // Prevents zoom on iOS
+            fontSize: { xs: '16px', sm: '14px' }, // Prevents zoom on iOS
+            color: '#ffffff',
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+          },
+          '& .MuiInputLabel-root': {
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&.Mui-focused': {
+              color: '#3b82f6',
+            }
+          },
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '8px',
+            '& fieldset': {
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+            },
+            '&:hover fieldset': {
+              borderColor: 'rgba(255, 255, 255, 0.4)',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#3b82f6',
+              borderWidth: '2px',
+            },
+          },
+          '& .MuiInputBase-input::placeholder': {
+            color: 'rgba(255, 255, 255, 0.5)',
+            opacity: 1,
           }
         }}
         required
@@ -68,7 +96,35 @@ function BasicSettingsStep({ formData, updateFormData }) {
         sx={{ 
           mb: 3,
           '& .MuiInputBase-input': {
-            fontSize: { xs: '16px', sm: '14px' }
+            fontSize: { xs: '16px', sm: '14px' },
+            color: '#ffffff',
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+          },
+          '& .MuiInputLabel-root': {
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&.Mui-focused': {
+              color: '#3b82f6',
+            }
+          },
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '8px',
+            '& fieldset': {
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+            },
+            '&:hover fieldset': {
+              borderColor: 'rgba(255, 255, 255, 0.4)',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#3b82f6',
+              borderWidth: '2px',
+            },
+          },
+          '& .MuiInputBase-input::placeholder': {
+            color: 'rgba(255, 255, 255, 0.5)',
+            opacity: 1,
           }
         }}
       />
@@ -81,7 +137,22 @@ function BasicSettingsStep({ formData, updateFormData }) {
         onChange={(event, newValue) => handleInputChange('tags', newValue)}
         renderTags={(value, getTagProps) =>
           value.map((option, index) => (
-            <Chip variant="outlined" label={option} {...getTagProps({ index })} />
+            <Chip 
+              variant="outlined" 
+              label={option} 
+              {...getTagProps({ index })}
+              sx={{
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: '#3b82f6',
+                color: '#ffffff',
+                '& .MuiChip-deleteIcon': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&:hover': {
+                    color: '#ffffff',
+                  }
+                }
+              }}
+            />
           ))
         }
         renderInput={(params) => (
@@ -89,8 +160,49 @@ function BasicSettingsStep({ formData, updateFormData }) {
             {...params}
             label="Tags / Kategorien"
             placeholder="Wählen Sie Kategorien oder fügen Sie eigene hinzu..."
+            sx={{
+              '& .MuiInputBase-input': {
+                fontSize: { xs: '16px', sm: '14px' },
+                color: '#ffffff',
+                backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+              },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&.Mui-focused': {
+                  color: '#3b82f6',
+                }
+              },
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                borderRadius: '8px',
+                '& fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#3b82f6',
+                  borderWidth: '2px',
+                },
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: 'rgba(255, 255, 255, 0.5)',
+                opacity: 1,
+              }
+            }}
           />
         )}
+        sx={{
+          '& .MuiAutocomplete-popupIndicator': {
+            color: 'rgba(255, 255, 255, 0.7)',
+          },
+          '& .MuiAutocomplete-clearIndicator': {
+            color: 'rgba(255, 255, 255, 0.7)',
+          }
+        }}
       />
     </Box>
   );

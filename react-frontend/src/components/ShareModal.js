@@ -63,7 +63,7 @@ function ShareModal({ open, onClose, chatbot }) {
   });
 
   // API Endpoint (sollte aus Environment kommen)
-  const API_BASE = process.env.REACT_APP_API_BASE || 'https://api.helferlain.app';
+  const API_BASE = process.env.REACT_APP_API_BASE || 'https://helferlain-a4178.web.app';
   
   // URLs generieren
   const publicChatUrl = `${API_BASE}/chat/${chatbot?.id}`;
@@ -118,10 +118,10 @@ function ShareModal({ open, onClose, chatbot }) {
       ...config
     };
 
-    return `<!-- HelferLain Chatbot Widget -->
+    return `<!-- HELFERLAIN Chatbot Widget -->
 <script src="${widgetUrl}"></script>
 <script>
-HelferLain.init(${JSON.stringify(settings, null, 2)});
+HELFERLAIN.init(${JSON.stringify(settings, null, 2)});
 </script>`;
   };
 
@@ -509,7 +509,7 @@ HelferLain.init(${JSON.stringify(settings, null, 2)});
                           onChange={(e) => handleSettingChange('showBranding', e.target.checked)}
                         />
                       }
-                      label="HelferLain Branding anzeigen"
+                      label="HELFERLAIN Branding anzeigen"
                       sx={{ mb: 2 }}
                     />
                   </CardContent>

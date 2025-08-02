@@ -468,10 +468,19 @@ function CreateChatbotPage() {
   }, []);
 
   const updateFormData = (section, data) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: { ...prev[section], ...data }
-    }));
+    // Falls nur ein Parameter übergeben wird (für Basic Settings)
+    if (typeof section === 'object' && data === undefined) {
+      setFormData(prev => ({
+        ...prev,
+        ...section
+      }));
+    } else {
+      // Normal für verschachtelte Objekte
+      setFormData(prev => ({
+        ...prev,
+        [section]: { ...prev[section], ...data }
+      }));
+    }
   };
 
   const validateStep = (stepIndex) => {

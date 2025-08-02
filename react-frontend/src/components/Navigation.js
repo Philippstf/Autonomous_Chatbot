@@ -413,7 +413,7 @@ function Navigation({ open, onToggle, isMobile }) {
                 letterSpacing: '-0.02em'
               }}
             >
-              HelferLain
+              HELFERLAIN
             </Typography>
           </Box>
           

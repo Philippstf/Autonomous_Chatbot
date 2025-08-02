@@ -163,7 +163,7 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile, darkMode, onThemeToggl
   
   // Get current page config or default
   const currentPage = pageConfig[location.pathname] || {
-    title: 'HelferLain',
+    title: 'HELFERLAIN',
     subtitle: 'AI Assistant Platform',
     emoji: '🚀',
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
