@@ -560,7 +560,7 @@ HelferLain.init(${JSON.stringify(settings, null, 2)});
         <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
-      </snackbar>
+      </Snackbar>
     </>
   );
 }
