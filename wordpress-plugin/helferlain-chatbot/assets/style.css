@@ -1,0 +1,116 @@
+/* HelferLain Chatbot WordPress Plugin Styles */
+
+.helferlain-chatbot-container {
+    position: relative;
+    z-index: 9999;
+}
+
+.helferlain-error {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.helferlain-inline-chat {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    position: relative;
+    min-height: 400px;
+}
+
+.helferlain-inline-chat::before {
+    content: "HelferLain Chat wird geladen...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #6b7280;
+    font-size: 14px;
+    z-index: 1;
+}
+
+/* WordPress Admin Styles */
+.helferlain-admin-notice {
+    background: #dbeafe;
+    border-left: 4px solid #3b82f6;
+    padding: 12px 16px;
+    margin: 15px 0;
+}
+
+.helferlain-admin-notice.error {
+    background: #fee2e2;
+    border-left-color: #dc2626;
+    color: #dc2626;
+}
+
+.helferlain-admin-notice.success {
+    background: #dcfce7;
+    border-left-color: #16a34a;
+    color: #15803d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .helferlain-inline-chat {
+        width: 100% !important;
+        height: 300px !important;
+    }
+    
+    .helferlain-admin-content {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Loading Animation */
+.helferlain-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4f46e5;
+    border-radius: 50%;
+    animation: helferlain-spin 1s linear infinite;
+}
+
+@keyframes helferlain-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Widget Theme Compatibility */
+.helferlain-chatbot-container[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+.helferlain-chatbot-container[data-theme="light"] {
+    color-scheme: light;
+}
+
+/* Accessibility */
+.helferlain-chatbot-container:focus-within {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+/* Integration with popular themes */
+.wp-block-group .helferlain-chatbot-container,
+.wp-block-column .helferlain-chatbot-container {
+    margin: 0;
+}
+
+/* Elementor compatibility */
+.elementor-widget-container .helferlain-chatbot-container {
+    width: 100%;
+}
+
+/* Gutenberg compatibility */
+.wp-block-shortcode .helferlain-chatbot-container {
+    max-width: 100%;
+}

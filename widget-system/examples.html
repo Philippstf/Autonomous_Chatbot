@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelferLain Widget - Integration Beispiele</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .example {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .example h3 {
+            color: #2d3748;
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+        }
+        
+        .example p {
+            color: #718096;
+            margin-bottom: 20px;
+        }
+        
+        .example pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        .demo-section h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .inline-demo {
+            height: 400px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: #3182ce;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background: #2c5282;
+        }
+        
+        .btn-secondary {
+            background: #718096;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        
+        .config-section {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .config-section h4 {
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .config-item label {
+            font-size: 12px;
+            color: #4a5568;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .config-item input,
+        .config-item select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .status {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            color: #22543d;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            border-color: #fc8181;
+            color: #742a2a;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid #e2e8f0;
+            color: #718096;
+        }
+        
+        @media (max-width: 768px) {
+            .examples {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 HelferLain Widget</h1>
+            <p>Universelles JavaScript Widget für nahtlose Chatbot-Integration in beliebige Websites</p>
+        </div>
+        
+        <!-- Integration Examples -->
+        <div class="examples">
+            <div class="example">
+                <h3>1. Minimale Integration</h3>
+                <p>Einfachste Variante - nur ein HTML-Element und Script-Tag erforderlich.</p>
+                <pre><code>&lt;!-- HTML --&gt;
+&lt;div data-bot-id="your-bot-id"&gt;&lt;/div&gt;
+&lt;script async src="https://cdn.helferlain.app/widget.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+            
+            <div class="example">
+                <h3>2. Chat-Bubble (Standard)</h3>
+                <p>Schwebender Chat-Button in der Ecke - ideal für die meisten Websites.</p>
+                <pre><code>&lt;script&gt;
+  window.HelferLain = {
+    config: {
+      botId: 'your-bot-id',
+      mode: 'bubble',
+      position: 'bottom-right',
+      theme: 'light',
+      autoOpen: false
+    }
+  };
+&lt;/script&gt;
+&lt;script async src="https://cdn.helferlain.app/widget.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+            
+            <div class="example">
+                <h3>3. Inline-Embedding</h3>
+                <p>Chat-Interface direkt in den Seiteninhalt eingebettet.</p>
+                <pre><code>&lt;div id="chat-container" style="height: 500px;"&gt;
+  &lt;div data-bot-id="your-bot-id" data-mode="inline"&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;script async src="https://cdn.helferlain.app/widget.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+            
+            <div class="example">
+                <h3>4. Modal-Popup</h3>
+                <p>Chat-Interface als Modal-Overlay mit manueller Steuerung.</p>
+                <pre><code>&lt;button onclick="HelferLain.widgets[0].open()"&gt;
+  Chat öffnen
+&lt;/button&gt;
+
+&lt;script&gt;
+  HelferLain.init({
+    botId: 'your-bot-id',
+    mode: 'modal',
+    autoOpen: false
+  });
+&lt;/script&gt;</code></pre>
+            </div>
+            
+            <div class="example">
+                <h3>5. WordPress Shortcode</h3>
+                <p>Für WordPress und andere CMS-Systeme.</p>
+                <pre><code>&lt;!-- WordPress Plugin Shortcode --&gt;
+[helferlain_chat bot_id="your-bot-id" theme="dark"]
+
+&lt;!-- Oder manuell --&gt;
+&lt;div data-bot-id="your-bot-id" 
+     data-theme="dark" 
+     data-mode="bubble"&gt;&lt;/div&gt;</code></pre>
+            </div>
+            
+            <div class="example">
+                <h3>6. Erweiterte Konfiguration</h3>
+                <p>Vollständige Anpassung mit Callbacks und Custom-Styling.</p>
+                <pre><code>&lt;script&gt;
+  HelferLain.init({
+    botId: 'your-bot-id',
+    theme: 'dark',
+    primaryColor: '#ff6b6b',
+    welcomeMessage: 'Willkommen! Wie kann ich helfen?',
+    placeholderText: 'Ihre Frage...',
+    showBranding: false,
+    onOpen: () =&gt; console.log('Chat opened'),
+    onMessage: (data) =&gt; console.log('Message:', data),
+    customCSS: '/assets/custom-chat.css'
+  });
+&lt;/script&gt;</code></pre>
+            </div>
+        </div>
+        
+        <!-- Live Demo Section -->
+        <div class="demo-section">
+            <h2>🚀 Live Demo</h2>
+            <p>Testen Sie das Widget live mit verschiedenen Konfigurationen:</p>
+            
+            <div class="config-section">
+                <h4>Widget-Konfiguration</h4>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="botId">Bot ID</label>
+                        <input type="text" id="botId" value="demo-bot-123" placeholder="Ihre Bot-ID">
+                    </div>
+                    
+                    <div class="config-item">
+                        <label for="mode">Modus</label>
+                        <select id="mode">
+                            <option value="bubble">Chat-Bubble</option>
+                            <option value="inline">Inline</option>
+                            <option value="modal">Modal</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-item">
+                        <label for="theme">Theme</label>
+                        <select id="theme">
+                            <option value="light">Hell</option>
+                            <option value="dark">Dunkel</option>
+                            <option value="auto">Automatisch</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-item">
+                        <label for="position">Position</label>
+                        <select id="position">
+                            <option value="bottom-right">Unten Rechts</option>
+                            <option value="bottom-left">Unten Links</option>
+                            <option value="top-right">Oben Rechts</option>
+                            <option value="top-left">Oben Links</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-item">
+                        <label for="primaryColor">Primärfarbe</label>
+                        <input type="color" id="primaryColor" value="#3182ce">
+                    </div>
+                    
+                    <div class="config-item">
+                        <label for="autoOpen">Auto-Öffnen</label>
+                        <select id="autoOpen">
+                            <option value="false">Nein</option>
+                            <option value="true">Ja</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="initializeWidget()">Widget Initialisieren</button>
+                <button class="btn btn-secondary" onclick="openWidget()">Öffnen</button>
+                <button class="btn btn-secondary" onclick="closeWidget()">Schließen</button>
+                <button class="btn btn-secondary" onclick="destroyWidget()">Entfernen</button>
+            </div>
+            
+            <div id="status" class="status" style="display: none;"></div>
+            
+            <!-- Inline Demo Container -->
+            <div id="inline-demo" class="inline-demo" style="display: none;">
+                <!-- Inline-Widget wird hier eingefügt -->
+            </div>
+        </div>
+        
+        <!-- Integration Guide -->
+        <div class="demo-section">
+            <h2>📋 Integration Guide</h2>
+            
+            <h3>Schritt 1: Bot ID erhalten</h3>
+            <p>Erstellen Sie einen Chatbot in der <a href="https://app.helferlain.app" target="_blank">HelferLain Management Console</a> und kopieren Sie die Bot-ID.</p>
+            
+            <h3>Schritt 2: Widget-Script einbinden</h3>
+            <p>Fügen Sie das Widget-Script in den <code>&lt;head&gt;</code> oder vor <code>&lt;/body&gt;</code> Ihrer Website ein:</p>
+            <pre><code>&lt;script async src="https://cdn.helferlain.app/widget.js"&gt;&lt;/script&gt;</code></pre>
+            
+            <h3>Schritt 3: Widget konfigurieren</h3>
+            <p>Wählen Sie eine der folgenden Optionen:</p>
+            
+            <h4>Option A: Auto-Initialize (Einfach)</h4>
+            <pre><code>&lt;div data-bot-id="your-bot-id" data-mode="bubble" data-theme="light"&gt;&lt;/div&gt;</code></pre>
+            
+            <h4>Option B: JavaScript-Konfiguration (Flexibel)</h4>
+            <pre><code>&lt;script&gt;
+  document.addEventListener('DOMContentLoaded', function() {
+    HelferLain.init({
+      botId: 'your-bot-id',
+      mode: 'bubble',
+      theme: 'light',
+      position: 'bottom-right',
+      primaryColor: '#your-brand-color'
+    });
+  });
+&lt;/script&gt;</code></pre>
+            
+            <h3>Schritt 4: Anpassung (Optional)</h3>
+            <p>Passen Sie das Widget mit Custom CSS oder erweiterten Konfigurationsoptionen an Ihr Design an.</p>
+        </div>
+        
+        <!-- API Reference -->
+        <div class="demo-section">
+            <h2>🔧 API Reference</h2>
+            
+            <h3>Konfigurationsoptionen</h3>
+            <pre><code>const config = {
+  // Erforderlich
+  botId: 'your-bot-id',
+  
+  // Erscheinungsbild
+  theme: 'light' | 'dark' | 'auto',
+  mode: 'bubble' | 'inline' | 'modal',
+  position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left',
+  primaryColor: '#hexcolor',
+  
+  // Verhalten
+  autoOpen: false,
+  showBranding: true,
+  closeOnOutsideClick: true,
+  
+  // Inhalt
+  welcomeMessage: 'Hallo! Wie kann ich helfen?',
+  placeholderText: 'Nachricht eingeben...',
+  language: 'de' | 'en',
+  
+  // Erweitert
+  customCSS: 'path/to/custom.css',
+  targetElement: '#custom-container',
+  maxMessages: 100,
+  
+  // Callbacks
+  onOpen: function() {},
+  onClose: function() {},
+  onMessage: function(data) {},
+  onError: function(error) {}
+};</code></pre>
+            
+            <h3>Public Methods</h3>
+            <pre><code>// Widget-Instanz
+const widget = HelferLain.init(config);
+
+// Methoden
+widget.open()           // Chat öffnen
+widget.close()          // Chat schließen
+widget.toggle()         // Chat toggle
+widget.destroy()        // Widget entfernen
+widget.sendMessage(msg) // Nachricht senden
+
+// Globale Methoden
+HelferLain.openAll()    // Alle Widgets öffnen
+HelferLain.closeAll()   // Alle Widgets schließen
+HelferLain.destroyAll() // Alle Widgets entfernen</code></pre>
+            
+            <h3>Events</h3>
+            <pre><code>// Event-Listener
+window.addEventListener('helferlain:initialized', function(e) {
+  console.log('Widget initialized:', e.detail.widget);
+});
+
+window.addEventListener('helferlain:open', function(e) {
+  console.log('Chat opened');
+});
+
+window.addEventListener('helferlain:message', function(e) {
+  console.log('Message sent:', e.detail.data);
+});</code></pre>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>
+            <strong>HelferLain Widget v1.0.0</strong><br>
+            Universelle Chatbot-Integration für jede Website<br>
+            <a href="https://helferlain.app" target="_blank">Website</a> • 
+            <a href="https://docs.helferlain.app" target="_blank">Dokumentation</a> • 
+            <a href="https://github.com/helferlain/widget" target="_blank">GitHub</a>
+        </p>
+    </div>
+    
+    <!-- Demo Widget Script -->
+    <script>
+        let currentWidget = null;
+        
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status error' : 'status';
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+        
+        function initializeWidget() {
+            try {
+                // Destroy existing widget
+                if (currentWidget) {
+                    currentWidget.destroy();
+                    currentWidget = null;
+                }
+                
+                // Get configuration
+                const config = {
+                    botId: document.getElementById('botId').value,
+                    mode: document.getElementById('mode').value,
+                    theme: document.getElementById('theme').value,
+                    position: document.getElementById('position').value,
+                    primaryColor: document.getElementById('primaryColor').value,
+                    autoOpen: document.getElementById('autoOpen').value === 'true',
+                    apiEndpoint: 'https://api.helferlain.app/api/v1/public', // Demo API
+                    debug: true,
+                    onOpen: () => showStatus('Chat geöffnet'),
+                    onClose: () => showStatus('Chat geschlossen'),
+                    onError: (error) => showStatus('Fehler: ' + error.message, true)
+                };
+                
+                // Set target element for inline mode
+                const inlineDemo = document.getElementById('inline-demo');
+                if (config.mode === 'inline') {
+                    config.targetElement = inlineDemo;
+                    inlineDemo.style.display = 'block';
+                } else {
+                    inlineDemo.style.display = 'none';
+                }
+                
+                // Initialize widget (falls HelferLain geladen ist)
+                if (typeof HelferLain !== 'undefined') {
+                    currentWidget = HelferLain.init(config);
+                    showStatus('Widget erfolgreich initialisiert');
+                } else {
+                    // Demo-Modus ohne echtes Widget
+                    showStatus('Demo-Modus: Widget-Script nicht geladen');
+                    simulateWidget(config);
+                }
+                
+            } catch (error) {
+                showStatus('Initialisierung fehlgeschlagen: ' + error.message, true);
+            }
+        }
+        
+        function openWidget() {
+            if (currentWidget && currentWidget.open) {
+                currentWidget.open();
+            } else {
+                showStatus('Kein Widget initialisiert', true);
+            }
+        }
+        
+        function closeWidget() {
+            if (currentWidget && currentWidget.close) {
+                currentWidget.close();
+            } else {
+                showStatus('Kein Widget initialisiert', true);
+            }
+        }
+        
+        function destroyWidget() {
+            if (currentWidget && currentWidget.destroy) {
+                currentWidget.destroy();
+                currentWidget = null;
+                showStatus('Widget entfernt');
+                document.getElementById('inline-demo').style.display = 'none';
+            } else {
+                showStatus('Kein Widget zu entfernen', true);
+            }
+        }
+        
+        function simulateWidget(config) {
+            // Demo-Widget für Präsentationszwecke
+            const demoWidget = {
+                config: config,
+                isOpen: false,
+                open: function() {
+                    this.isOpen = true;
+                    showStatus('Demo: Chat würde sich öffnen');
+                },
+                close: function() {
+                    this.isOpen = false;
+                    showStatus('Demo: Chat würde sich schließen');
+                },
+                destroy: function() {
+                    showStatus('Demo: Widget würde entfernt werden');
+                }
+            };
+            
+            currentWidget = demoWidget;
+        }
+        
+        // Initial demo setup
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('Demo bereit - Klicken Sie auf "Widget Initialisieren"');
+        });
+        
+        // Theme auto-detection demo
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.getElementById('theme').value = 'dark';
+        }
+    </script>
+    
+    <!-- Echter Widget-Code für Demo (optional) -->
+    <!-- <script async src="../widget.js"></script> -->
+</body>
+</html>

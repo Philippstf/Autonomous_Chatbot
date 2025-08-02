@@ -73,6 +73,14 @@ logs/
 .env.test
 .env.production
 
+# Firebase Credentials (CRITICAL SECURITY)
+firebase-credentials.json
+**/firebase-credentials.json
+service-account-key.json
+**/service-account-key.json
+google-credentials.json
+**/google-credentials.json
+
 # Database
 *.db
 *.sqlite
