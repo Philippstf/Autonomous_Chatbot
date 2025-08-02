@@ -198,18 +198,53 @@ function CreateChatbotPage() {
         railwayResponse = await createChatbot(railwayData, formData.uploaded_files);
         console.log('✅ Railway response:', railwayResponse);
         
-        setCreationProgress({
-          status: 'processing', 
-          progress: 0.6,
-          message: 'Wissensbasis wird aufgebaut...'
-        });
-
-        // Extract chatbot ID from Railway response
-        finalChatbotId = railwayResponse.chatbot_id || railwayResponse.creation_id || railwayResponse.id;
+        // Get creation_id for polling progress
+        const creationId = railwayResponse.creation_id;
+        if (!creationId) {
+          throw new Error('No creation_id received from Railway API');
+        }
         
-        if (railwayResponse.creation_id) {
-          console.log('🔄 Railway creation_id:', railwayResponse.creation_id);
-          finalChatbotId = railwayResponse.creation_id;
+        console.log('🔄 Railway creation_id:', creationId);
+        
+        // Poll for progress until completion
+        let progressResponse;
+        let pollAttempts = 0;
+        const maxPollAttempts = 60; // 5 minutes max (5 second intervals)
+        
+        do {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          
+          try {
+            const progressUrl = `${import.meta.env.VITE_RAILWAY_API_URL}/api/chatbots/creation/${creationId}/progress`;
+            const response = await fetch(progressUrl);
+            progressResponse = await response.json();
+            
+            console.log('📊 Progress update:', progressResponse);
+            
+            // Update UI with progress
+            setCreationProgress({
+              status: progressResponse.status,
+              progress: progressResponse.progress,
+              message: progressResponse.message
+            });
+            
+            pollAttempts++;
+            
+          } catch (pollError) {
+            console.error('❌ Progress polling error:', pollError);
+            pollAttempts++;
+          }
+          
+        } while (progressResponse?.status === 'processing' && pollAttempts < maxPollAttempts);
+        
+        // Check final result
+        if (progressResponse?.status === 'completed' && progressResponse?.chatbot_id) {
+          finalChatbotId = progressResponse.chatbot_id;
+          console.log('✅ Chatbot created successfully with ID:', finalChatbotId);
+        } else if (progressResponse?.status === 'error') {
+          throw new Error(progressResponse.message || 'Chatbot creation failed');
+        } else {
+          throw new Error('Chatbot creation timed out or failed');
         }
       } catch (railwayError) {
         console.error('❌ Railway backend failed:', railwayError);

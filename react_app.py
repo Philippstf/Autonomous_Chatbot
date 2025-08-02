@@ -416,7 +416,8 @@ async def create_chatbot_background(
                 "status": "completed",
                 "chatbot_id": chatbot_id,
                 "chatbot_url": f"/chatbot/{chatbot_id}",
-                "user_id": user_id
+                "user_id": user_id,
+                "creation_id": creation_id  # Add creation_id for reference
             }
         
         # Cleanup temp files
