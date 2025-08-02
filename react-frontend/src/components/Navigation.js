@@ -110,86 +110,7 @@ const bottomNavigationItems = [
   },
 ];
 
-const SystemStats = () => {
-  const [stats, setStats] = useState({
-    botsActive: 5,
-    messagesProcessed: 1247,
-    uptime: 99.8,
-    responseTime: 120
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        ...prev,
-        messagesProcessed: prev.messagesProcessed + Math.floor(Math.random() * 3),
-        responseTime: Math.max(80, Math.min(200, prev.responseTime + (Math.random() - 0.5) * 20))
-      }));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <Box sx={{ 
-      mx: 2, 
-      mb: 3, 
-      p: 2, 
-      background: alpha('#000', 0.2),
-      borderRadius: 2,
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      backdropFilter: 'blur(10px)'
-    }}>
-      <Typography variant="caption" sx={{ 
-        color: 'rgba(255, 255, 255, 0.6)', 
-        textTransform: 'uppercase',
-        letterSpacing: '1px',
-        fontWeight: 700,
-        mb: 1,
-        display: 'block'
-      }}>
-        System Status
-      </Typography>
-      
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h6" sx={{ color: '#00ff88', fontFamily: 'monospace', fontWeight: 700 }}>
-            {stats.botsActive}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-            Active Bots
-          </Typography>
-        </Box>
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h6" sx={{ color: '#4facfe', fontFamily: 'monospace', fontWeight: 700 }}>
-            {stats.messagesProcessed}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-            Messages
-          </Typography>
-        </Box>
-      </Box>
-      
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ 
-            width: 6, 
-            height: 6, 
-            borderRadius: '50%', 
-            background: '#00ff88',
-            animation: 'pulse 2s infinite'
-          }} />
-          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontFamily: 'monospace' }}>
-            {stats.uptime}% UP
-          </Typography>
-        </Box>
-        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontFamily: 'monospace' }}>
-          {stats.responseTime}ms
-        </Typography>
-      </Box>
-    </Box>
-  );
-};
+// Removed SystemStats component - technical metrics not suitable for user application
 
 function Navigation({ open, onToggle, isMobile }) {
   const navigate = useNavigate();
@@ -390,8 +311,9 @@ function Navigation({ open, onToggle, isMobile }) {
         keepMounted: true,
       }}
       sx={{
-        width: drawerWidth,
+        width: open ? drawerWidth : 0,
         flexShrink: 0,
+        transition: 'width 0.3s ease',
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
@@ -399,6 +321,8 @@ function Navigation({ open, onToggle, isMobile }) {
           borderRight: '1px solid rgba(255, 255, 255, 0.1)',
           overflow: 'hidden',
           position: 'relative',
+          transition: 'transform 0.3s ease',
+          transform: open ? 'translateX(0)' : 'translateX(-100%)',
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -531,14 +455,7 @@ function Navigation({ open, onToggle, isMobile }) {
         </motion.div>
       </Box>
 
-      {/* System Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
-      >
-        <SystemStats />
-      </motion.div>
+      {/* Removed System Stats - technical metrics not suitable for user application */}
 
       {/* Main Navigation */}
       <Box sx={{ flexGrow: 1, py: 1, position: 'relative', zIndex: 1 }}>

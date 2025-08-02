@@ -886,7 +886,15 @@ function CreateChatbotPage() {
         {/* Disclaimer Modal */}
         <BotCreationDisclaimerModal
           open={disclaimerOpen}
-          onClose={() => setDisclaimerOpen(false)}
+          onAccept={() => {
+            setDisclaimerOpen(false);
+            localStorage.setItem('hasSeenBotCreationDisclaimer', 'true');
+          }}
+          onCancel={() => {
+            setDisclaimerOpen(false);
+            navigate('/dashboard');
+          }}
+          botName={formData.name || 'Neuer Chatbot'}
         />
       </Box>
     </Box>

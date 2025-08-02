@@ -61,8 +61,25 @@ function App() {
           <Box
             sx={{
               minHeight: '100vh',
-              background: 'linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              position: 'relative',
               color: 'text.primary',
+              display: 'flex',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: `
+                  radial-gradient(circle at 20% 20%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(79, 172, 254, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 70%, rgba(67, 233, 123, 0.1) 0%, transparent 50%)
+                `,
+                pointerEvents: 'none',
+                zIndex: 0,
+              }
             }}
           >
             {/* Navigation */}
@@ -72,16 +89,15 @@ function App() {
               isMobile={isMobile}
             />
             
-            {/* Main Content */}
+            {/* Main Content Container */}
             <Box
-              component="main"
               sx={{
-                marginLeft: {
-                  xs: 0,
-                  md: sidebarOpen ? '240px' : '0px'
-                },
+                flexGrow: 1,
+                display: 'flex',
+                flexDirection: 'column',
                 minHeight: '100vh',
-                transition: 'margin-left 0.3s ease',
+                position: 'relative',
+                zIndex: 1,
               }}
             >
               {/* Header */}
@@ -92,7 +108,7 @@ function App() {
               />
               
               {/* Page Content */}
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p: 3, flexGrow: 1 }}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}

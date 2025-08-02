@@ -555,26 +555,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 20%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, rgba(79, 172, 254, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 40% 70%, rgba(67, 233, 123, 0.1) 0%, transparent 50%)
-        `,
-        pointerEvents: 'none',
-      }
-    }}>
-      <Container maxWidth="xl" sx={{ py: 4, position: 'relative', zIndex: 1 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Neural Command Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -1046,8 +1027,7 @@ const DashboardPage = () => {
             </Grid>
           </Grid>
         </motion.div>
-      </Container>
-    </Box>
+    </Container>
   );
 };
 

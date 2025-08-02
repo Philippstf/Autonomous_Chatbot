@@ -151,79 +151,7 @@ const SystemStatusChip = ({ status = 'online' }) => {
   );
 };
 
-const StatusIndicators = () => {
-  const [metrics, setMetrics] = useState({
-    cpu: 45,
-    memory: 67,
-    response: 120,
-    uptime: 99.8
-  });
-
-  useEffect(() => {
-    // Simulate real-time metrics
-    const interval = setInterval(() => {
-      setMetrics(prev => ({
-        cpu: Math.max(10, Math.min(90, prev.cpu + (Math.random() - 0.5) * 10)),
-        memory: Math.max(20, Math.min(85, prev.memory + (Math.random() - 0.5) * 8)),
-        response: Math.max(50, Math.min(200, prev.response + (Math.random() - 0.5) * 20)),
-        uptime: Math.max(95, Math.min(100, prev.uptime + (Math.random() - 0.5) * 0.1))
-      }));
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <Box sx={{ 
-      display: { xs: 'none', lg: 'flex' }, 
-      alignItems: 'center', 
-      gap: 2,
-      mr: 2
-    }}>
-      <Tooltip title={`CPU Usage: ${metrics.cpu.toFixed(0)}%`}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 0.5,
-          color: 'text.secondary',
-          fontSize: '0.75rem',
-          fontFamily: 'monospace'
-        }}>
-          <SpeedIcon sx={{ fontSize: 12 }} />
-          {metrics.cpu.toFixed(0)}%
-        </Box>
-      </Tooltip>
-      
-      <Tooltip title={`Response Time: ${metrics.response.toFixed(0)}ms`}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 0.5,
-          color: 'text.secondary',
-          fontSize: '0.75rem',
-          fontFamily: 'monospace'
-        }}>
-          <TrendingUpIcon sx={{ fontSize: 12 }} />
-          {metrics.response.toFixed(0)}ms
-        </Box>
-      </Tooltip>
-      
-      <Tooltip title={`Uptime: ${metrics.uptime.toFixed(1)}%`}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 0.5,
-          color: 'text.secondary',
-          fontSize: '0.75rem',
-          fontFamily: 'monospace'
-        }}>
-          <SecurityIcon sx={{ fontSize: 12 }} />
-          {metrics.uptime.toFixed(1)}%
-        </Box>
-      </Tooltip>
-    </Box>
-  );
-};
+// Removed StatusIndicators component - technical metrics not suitable for user application
 
 function Header({ onSidebarToggle, sidebarOpen, isMobile, darkMode, onThemeToggle }) {
   const location = useLocation();
@@ -450,9 +378,6 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile, darkMode, onThemeToggl
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* System Metrics */}
-            <StatusIndicators />
-            
             {/* Status Chip */}
             <SystemStatusChip status="online" />
 
