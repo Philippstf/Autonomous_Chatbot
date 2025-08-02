@@ -188,6 +188,9 @@ class ChatbotFactory:
                     document_chunks.extend(chunks)
                     config.documents.append(uploaded_file.name)
             
+            # Speichere Konfiguration ZUERST (für Firebase Storage Upload)
+            self._save_chatbot_config(config)
+            
             # Erstelle Cloud-enabled RAG-System
             rag_system = CloudMultiSourceRAG(chatbot_id, use_cloud_storage=True)
             
@@ -207,9 +210,6 @@ class ChatbotFactory:
                 # Cleanup bei Fehler
                 self._cleanup_chatbot(chatbot_id)
                 return None
-            
-            # Speichere Konfiguration
-            self._save_chatbot_config(config)
             
             # Registriere Chatbot
             self.registry["chatbots"][chatbot_id] = {
