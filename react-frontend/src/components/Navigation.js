@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Drawer,
@@ -13,6 +13,10 @@ import {
   useTheme,
   IconButton,
   Button,
+  Badge,
+  Chip,
+  alpha,
+  Avatar,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -24,59 +28,168 @@ import {
   Close as CloseIcon,
   Logout as LogoutIcon,
   Email as EmailIcon,
+  RocketLaunch as RocketIcon,
+  Psychology as PsychologyIcon,
+  Speed as SpeedIcon,
+  Security as SecurityIcon,
+  CloudQueue as CloudIcon,
+  AutoAwesome as AutoAwesomeIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 
-const drawerWidth = 240;
+const drawerWidth = 280;
 
 const navigationItems = [
   {
-    text: 'Dashboard',
-    icon: <DashboardIcon />,
+    text: 'Mission Control',
+    icon: <RocketIcon />,
     path: '/dashboard',
-    description: 'Overview & Analytics'
+    description: 'Operations Dashboard',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    badge: null,
+    isNew: false
   },
   {
-    text: 'Create Chatbot',
-    icon: <AddIcon />,
+    text: 'Neural Forge',
+    icon: <PsychologyIcon />,
     path: '/create',
-    description: 'New AI Assistant'
+    description: 'Create AI Assistant',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    badge: null,
+    isNew: false
   },
   {
-    text: 'My Chatbots',
+    text: 'AI Arsenal',
     icon: <SmartToyIcon />,
     path: '/chatbots',
-    description: 'Manage Bots'
+    description: 'Manage AI Workforce',
+    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    badge: 'active',
+    isNew: false
   },
   {
-    text: 'Lead Management',
-    icon: <EmailIcon />,
-    path: '/leads',
-    description: 'Leads & Conversations'
-  },
-  {
-    text: 'Analytics',
+    text: 'Data Nexus',
     icon: <AnalyticsIcon />,
     path: '/analytics',
-    description: 'Performance Insights'
+    description: 'Intelligence Metrics',
+    gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    badge: null,
+    isNew: false
+  },
+  {
+    text: 'Lead Matrix',
+    icon: <EmailIcon />,
+    path: '/leads',
+    description: 'Contact Intelligence',
+    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    badge: 3,
+    isNew: true
   },
 ];
 
 const bottomNavigationItems = [
   {
-    text: 'Settings',
+    text: 'Command Center',
     icon: <SettingsIcon />,
     path: '/settings',
-    description: 'Platform Config'
+    description: 'System Configuration',
+    gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    badge: null,
+    isNew: false
   },
   {
-    text: 'Help & Support',
+    text: 'Knowledge Base',
     icon: <HelpIcon />,
     path: '/help',
-    description: 'Documentation'
+    description: 'Documentation Hub',
+    gradient: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
+    badge: null,
+    isNew: false
   },
 ];
+
+const SystemStats = () => {
+  const [stats, setStats] = useState({
+    botsActive: 5,
+    messagesProcessed: 1247,
+    uptime: 99.8,
+    responseTime: 120
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStats(prev => ({
+        ...prev,
+        messagesProcessed: prev.messagesProcessed + Math.floor(Math.random() * 3),
+        responseTime: Math.max(80, Math.min(200, prev.responseTime + (Math.random() - 0.5) * 20))
+      }));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Box sx={{ 
+      mx: 2, 
+      mb: 3, 
+      p: 2, 
+      background: alpha('#000', 0.2),
+      borderRadius: 2,
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      backdropFilter: 'blur(10px)'
+    }}>
+      <Typography variant="caption" sx={{ 
+        color: 'rgba(255, 255, 255, 0.6)', 
+        textTransform: 'uppercase',
+        letterSpacing: '1px',
+        fontWeight: 700,
+        mb: 1,
+        display: 'block'
+      }}>
+        System Status
+      </Typography>
+      
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ color: '#00ff88', fontFamily: 'monospace', fontWeight: 700 }}>
+            {stats.botsActive}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+            Active Bots
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ color: '#4facfe', fontFamily: 'monospace', fontWeight: 700 }}>
+            {stats.messagesProcessed}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+            Messages
+          </Typography>
+        </Box>
+      </Box>
+      
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ 
+            width: 6, 
+            height: 6, 
+            borderRadius: '50%', 
+            background: '#00ff88',
+            animation: 'pulse 2s infinite'
+          }} />
+          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontFamily: 'monospace' }}>
+            {stats.uptime}% UP
+          </Typography>
+        </Box>
+        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', fontFamily: 'monospace' }}>
+          {stats.responseTime}ms
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
 
 function Navigation({ open, onToggle, isMobile }) {
   const navigate = useNavigate();
@@ -86,6 +199,9 @@ function Navigation({ open, onToggle, isMobile }) {
 
   const handleNavigation = (path) => {
     navigate(path);
+    if (isMobile) {
+      onToggle();
+    }
   };
 
   const handleLogout = async () => {
@@ -101,59 +217,165 @@ function Navigation({ open, onToggle, isMobile }) {
     return location.pathname === path;
   };
 
+  const getUserInitials = () => {
+    if (!user) return 'AI';
+    const name = user.displayName || user.email;
+    if (name) {
+      const parts = name.split(' ');
+      if (parts.length > 1) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return name[0].toUpperCase();
+    }
+    return 'U';
+  };
+
   const renderNavigationItem = (item, index) => (
     <motion.div
       key={item.path}
-      initial={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, x: -30 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ 
+        delay: index * 0.1,
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }}
     >
-      <ListItem disablePadding sx={{ mb: 0.5 }}>
+      <ListItem disablePadding sx={{ mb: 1 }}>
         <ListItemButton
           onClick={() => handleNavigation(item.path)}
           selected={isActivePath(item.path)}
           sx={{
             borderRadius: 2,
-            mx: 1,
-            '&.Mui-selected': {
-              backgroundColor: 'rgba(31, 58, 147, 0.2)',
-              '&:hover': {
-                backgroundColor: 'rgba(31, 58, 147, 0.3)',
-              },
+            mx: 2,
+            py: 1.5,
+            background: isActivePath(item.path) 
+              ? `linear-gradient(135deg, ${alpha('#fff', 0.15)}, ${alpha('#fff', 0.05)})` 
+              : 'transparent',
+            border: isActivePath(item.path) 
+              ? '1px solid rgba(255, 255, 255, 0.2)' 
+              : '1px solid transparent',
+            backdropFilter: isActivePath(item.path) ? 'blur(10px)' : 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: isActivePath(item.path) ? item.gradient : 'transparent',
+              opacity: isActivePath(item.path) ? 0.1 : 0,
+              transition: 'opacity 0.3s ease',
             },
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              background: `linear-gradient(135deg, ${alpha('#fff', 0.1)}, ${alpha('#fff', 0.03)})`,
+              transform: 'translateX(4px)',
+              '&::before': {
+                opacity: 0.15,
+                background: item.gradient,
+              }
             },
+            transition: 'all 0.3s ease',
           }}
         >
           <ListItemIcon
             sx={{
-              color: isActivePath(item.path) ? 'primary.main' : 'text.secondary',
-              minWidth: 40,
+              color: isActivePath(item.path) ? '#fff' : 'rgba(255, 255, 255, 0.7)',
+              minWidth: 48,
+              '& svg': {
+                fontSize: '1.4rem',
+                filter: isActivePath(item.path) 
+                  ? 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))'
+                  : 'none'
+              }
             }}
           >
-            {item.icon}
+            {item.badge && (
+              <Badge 
+                badgeContent={item.badge} 
+                color="error"
+                sx={{
+                  '& .MuiBadge-badge': {
+                    fontSize: '0.6rem',
+                    height: 16,
+                    minWidth: 16
+                  }
+                }}
+              >
+                {item.icon}
+              </Badge>
+            )}
+            {!item.badge && item.icon}
           </ListItemIcon>
+          
           <ListItemText
             primary={
-              <Typography
-                variant="body2"
-                fontWeight={isActivePath(item.path) ? 600 : 400}
-                color={isActivePath(item.path) ? 'primary.main' : 'text.primary'}
-              >
-                {item.text}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography
+                  variant="body2"
+                  fontWeight={isActivePath(item.path) ? 700 : 500}
+                  sx={{
+                    color: isActivePath(item.path) ? '#fff' : 'rgba(255, 255, 255, 0.9)',
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.3px'
+                  }}
+                >
+                  {item.text}
+                </Typography>
+                {item.isNew && (
+                  <Chip 
+                    label="NEW" 
+                    size="small"
+                    sx={{ 
+                      height: 16,
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      background: 'linear-gradient(135deg, #ff6b6b, #ffd93d)',
+                      color: '#000',
+                      '& .MuiChip-label': {
+                        px: 0.5
+                      }
+                    }}
+                  />
+                )}
+              </Box>
             }
             secondary={
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: '0.7rem' }}
+                sx={{
+                  color: isActivePath(item.path) 
+                    ? 'rgba(255, 255, 255, 0.8)' 
+                    : 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '0.7rem',
+                  fontWeight: 400,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
               >
                 {item.description}
               </Typography>
             }
           />
+          
+          {/* Active indicator */}
+          {isActivePath(item.path) && (
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 8,
+                width: 4,
+                height: 4,
+                borderRadius: '50%',
+                background: '#00ff88',
+                boxShadow: '0 0 8px #00ff88',
+              }}
+            />
+          )}
         </ListItemButton>
       </ListItem>
     </motion.div>
@@ -165,7 +387,7 @@ function Navigation({ open, onToggle, isMobile }) {
       open={open}
       onClose={onToggle}
       ModalProps={{
-        keepMounted: true, // Better mobile performance
+        keepMounted: true,
       }}
       sx={{
         width: drawerWidth,
@@ -173,88 +395,254 @@ function Navigation({ open, onToggle, isMobile }) {
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          background: 'linear-gradient(180deg, #171924 0%, #1f2937 100%)',
+          background: 'linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
           borderRight: '1px solid rgba(255, 255, 255, 0.1)',
           overflow: 'hidden',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `
+              radial-gradient(circle at 20% 20%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(79, 172, 254, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 40% 70%, rgba(240, 147, 251, 0.05) 0%, transparent 50%)
+            `,
+            pointerEvents: 'none',
+          }
         },
       }}
     >
-      {/* Header */}
+      {/* Header with Glassmorphism */}
       <Box
         sx={{
           p: 3,
-          background: 'linear-gradient(135deg, #1f3a93, #34495e)',
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(139, 92, 246, 0.1))',
+          backdropFilter: 'blur(20px) saturate(120%)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderLeft: 'none',
+          borderRight: 'none',
+          borderTop: 'none',
           color: 'white',
           textAlign: 'center',
           position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Close button for mobile */}
         {isMobile && (
-          <IconButton
-            onClick={onToggle}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              },
-            }}
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
-            <CloseIcon />
-          </IconButton>
+            <IconButton
+              onClick={onToggle}
+              sx={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                color: 'white',
+                background: alpha('#fff', 0.1),
+                backdropFilter: 'blur(10px)',
+                '&:hover': {
+                  background: alpha('#fff', 0.2),
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </motion.div>
         )}
         
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          initial={{ scale: 0.8, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
         >
-          <Typography variant="h5" fontWeight={700} gutterBottom>
-            🚀 Chatbot
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+            <motion.div
+              animate={{ 
+                rotate: [0, 360],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 8,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              style={{ marginRight: '12px' }}
+            >
+              <Typography variant="h4">🚀</Typography>
+            </motion.div>
+            <Typography 
+              variant="h5" 
+              fontWeight={900}
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontFamily: '"Space Grotesk", sans-serif',
+                letterSpacing: '-0.02em'
+              }}
+            >
+              HelferLain
+            </Typography>
+          </Box>
+          
+          <Typography 
+            variant="subtitle2" 
+            sx={{
+              opacity: 0.9,
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              fontSize: '0.7rem',
+              color: 'rgba(255, 255, 255, 0.8)'
+            }}
+          >
+            Neural Network Platform
           </Typography>
-          <Typography variant="subtitle2" opacity={0.9}>
-            Professional Platform
-          </Typography>
+          
+          <Box sx={{ 
+            mt: 2, 
+            display: 'flex', 
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Chip
+              label="AI ACTIVE"
+              size="small"
+              sx={{
+                background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1))',
+                border: '1px solid rgba(0, 255, 136, 0.3)',
+                color: '#00ff88',
+                fontWeight: 700,
+                fontSize: '0.6rem',
+                fontFamily: 'monospace',
+                animation: 'pulse 2s infinite',
+              }}
+            />
+          </Box>
         </motion.div>
       </Box>
 
+      {/* System Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.6 }}
+      >
+        <SystemStats />
+      </motion.div>
+
       {/* Main Navigation */}
-      <Box sx={{ flexGrow: 1, py: 2 }}>
-        <List>
+      <Box sx={{ flexGrow: 1, py: 1, position: 'relative', zIndex: 1 }}>
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            px: 3, 
+            color: 'rgba(255, 255, 255, 0.5)',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            fontWeight: 700,
+            fontSize: '0.7rem'
+          }}
+        >
+          Core Systems
+        </Typography>
+        <List sx={{ mt: 1 }}>
           {navigationItems.map((item, index) => renderNavigationItem(item, index))}
         </List>
       </Box>
 
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+      <Divider sx={{ 
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        mx: 2,
+        '&::before': {
+          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)'
+        }
+      }} />
 
       {/* Bottom Navigation */}
-      <Box sx={{ py: 2 }}>
-        <List>
+      <Box sx={{ py: 2, position: 'relative', zIndex: 1 }}>
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            px: 3, 
+            color: 'rgba(255, 255, 255, 0.5)',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            fontWeight: 700,
+            fontSize: '0.7rem'
+          }}
+        >
+          Control Panel
+        </Typography>
+        <List sx={{ mt: 1 }}>
           {bottomNavigationItems.map((item, index) => 
             renderNavigationItem(item, navigationItems.length + index)
           )}
         </List>
-        
-        {/* User Info & Logout */}
-        <Box sx={{ px: 2, mt: 2 }}>
-          <Typography variant="body2" sx={{ 
-            color: 'rgba(255, 255, 255, 0.7)', 
-            mb: 1,
-            fontSize: '0.8rem'
-          }}>
-            Angemeldet als:
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            color: 'white', 
-            mb: 2,
-            fontWeight: 500,
-            fontSize: '0.9rem'
-          }}>
-            {user?.email}
-          </Typography>
+      </Box>
+
+      {/* User Profile Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.6 }}
+      >
+        <Box sx={{ 
+          mx: 2, 
+          mb: 2, 
+          p: 2, 
+          background: alpha('#000', 0.3),
+          borderRadius: 2,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                fontSize: '12px',
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                mr: 1.5
+              }}
+            >
+              {getUserInitials()}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ 
+                color: 'white', 
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {user?.displayName || user?.email?.split('@')[0] || 'Neural User'}
+              </Typography>
+              <Typography variant="caption" sx={{ 
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '0.7rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'block'
+              }}>
+                {user?.email}
+              </Typography>
+            </Box>
+          </Box>
+          
           <Button
             fullWidth
             variant="outlined"
@@ -262,19 +650,26 @@ function Navigation({ open, onToggle, isMobile }) {
             startIcon={<LogoutIcon />}
             onClick={handleLogout}
             sx={{
-              borderColor: 'rgba(255, 255, 255, 0.3)',
+              borderColor: 'rgba(255, 255, 255, 0.2)',
               color: 'rgba(255, 255, 255, 0.8)',
-              fontSize: '0.8rem',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
               '&:hover': {
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              }
+                borderColor: '#ff4757',
+                backgroundColor: alpha('#ff4757', 0.1),
+                color: '#ff4757',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(255, 71, 87, 0.2)',
+              },
+              transition: 'all 0.3s ease'
             }}
           >
-            Abmelden
+            Disconnect
           </Button>
         </Box>
-      </Box>
+      </motion.div>
 
       {/* Version Info */}
       <Box
@@ -282,14 +677,23 @@ function Navigation({ open, onToggle, isMobile }) {
           p: 2,
           textAlign: 'center',
           borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          background: alpha('#000', 0.2),
         }}
       >
-        <Typography variant="caption" color="text.secondary">
-          Platform v2.0.0
+        <Typography variant="caption" sx={{ 
+          color: 'rgba(255, 255, 255, 0.4)',
+          fontFamily: 'monospace',
+          fontSize: '0.7rem'
+        }}>
+          Neural Platform v3.0.1
         </Typography>
         <br />
-        <Typography variant="caption" color="text.secondary">
-          React + FastAPI
+        <Typography variant="caption" sx={{ 
+          color: 'rgba(255, 255, 255, 0.3)',
+          fontFamily: 'monospace',
+          fontSize: '0.6rem'
+        }}>
+          Next-Gen AI Architecture
         </Typography>
       </Box>
     </Drawer>

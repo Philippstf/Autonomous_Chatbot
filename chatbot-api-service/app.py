@@ -16,6 +16,7 @@ from fastapi import FastAPI, HTTPException, Request, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -232,6 +233,9 @@ class PersistentBotService:
 
 # Global Service Instance
 bot_service = PersistentBotService()
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 # ─── Lifecycle Management ────────────────────────────────────────────────────
 
@@ -768,6 +772,156 @@ async def serve_public_chat_interface(bot_id: str, request: Request):
             content=f"<h1>Fehler</h1><p>Chat-Interface konnte nicht geladen werden: {str(e)}</p>",
             status_code=500
         )
+
+# ─── Session Management API ──────────────────────────────────────────────────
+
+class SessionRequest(BaseModel):
+    bot_id: str
+
+class SessionResponse(BaseModel):
+    session_id: str
+    bot_id: str
+    welcome_message: str
+    status: str = "active"
+
+class MessageRequest(BaseModel):
+    session_id: str
+    message: str
+
+class MessageResponse(BaseModel):
+    response: str
+    session_id: str
+    timestamp: datetime
+
+# In-Memory Session Storage (für einfache Implementation)
+active_sessions: Dict[str, Dict] = {}
+
+@app.post("/api/chat/session", response_model=SessionResponse)
+async def create_chat_session(request: SessionRequest):
+    """
+    Erstellt eine neue Chat-Session für Frontend
+    Verwendet von der Chat-UI Template
+    """
+    try:
+        bot_id = request.bot_id
+        
+        # Bot laden und validieren
+        bot = await bot_service.get_bot(bot_id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found or inactive")
+        
+        # Session ID generieren
+        session_id = str(uuid.uuid4())
+        
+        # Session speichern
+        active_sessions[session_id] = {
+            'bot_id': bot_id,
+            'created_at': datetime.now(),
+            'conversation_id': str(uuid.uuid4()),
+            'messages': []
+        }
+        
+        # Welcome Message aus Bot-Config
+        config = bot['config']
+        welcome_message = config.branding.get('welcome_message', f"Hallo! Ich bin {config.name}. Wie kann ich Ihnen helfen?")
+        
+        logger.info(f"✅ Created session {session_id} for bot {bot_id}")
+        
+        return SessionResponse(
+            session_id=session_id,
+            bot_id=bot_id,
+            welcome_message=welcome_message,
+            status="active"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create session for bot {request.bot_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create session")
+
+@app.post("/api/chat/message", response_model=MessageResponse)
+async def send_chat_message(request: MessageRequest):
+    """
+    Sendet eine Nachricht in einer bestehenden Session
+    Verwendet von der Chat-UI Template
+    """
+    try:
+        session_id = request.session_id
+        message = request.message
+        
+        # Session validieren
+        if session_id not in active_sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session = active_sessions[session_id]
+        bot_id = session['bot_id']
+        conversation_id = session['conversation_id']
+        
+        # Bot laden
+        bot = await bot_service.get_bot(bot_id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found")
+        
+        # RAG Response generieren
+        rag_system = bot['rag_system']
+        response_data = rag_system.get_response(
+            query=message,
+            conversation_id=conversation_id
+        )
+        
+        # Messages zur Session hinzufügen
+        timestamp = datetime.now()
+        session['messages'].extend([
+            {'role': 'user', 'content': message, 'timestamp': timestamp},
+            {'role': 'bot', 'content': response_data['response'], 'timestamp': timestamp}
+        ])
+        
+        logger.info(f"💬 Message processed in session {session_id}")
+        
+        return MessageResponse(
+            response=response_data['response'],
+            session_id=session_id,
+            timestamp=timestamp
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to process message in session {request.session_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process message")
+
+@app.get("/api/chat/session/{session_id}")
+async def get_session_info(session_id: str):
+    """
+    Holt Session-Informationen
+    """
+    if session_id not in active_sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = active_sessions[session_id]
+    return {
+        'session_id': session_id,
+        'bot_id': session['bot_id'],
+        'created_at': session['created_at'],
+        'message_count': len(session['messages']),
+        'status': 'active'
+    }
+
+# ─── Widget JavaScript ───────────────────────────────────────────────────────
+
+@app.get("/widget.js", response_class=HTMLResponse)
+async def serve_widget_script():
+    """
+    Liefert das JavaScript Widget für Website-Integration
+    """
+    with open("../widget-system/widget.js", "r") as f:
+        widget_content = f.read()
+    
+    return HTMLResponse(
+        content=widget_content,
+        headers={"Content-Type": "application/javascript"}
+    )
 
 # ─── Development Server ──────────────────────────────────────────────────────
 

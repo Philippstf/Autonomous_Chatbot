@@ -29,10 +29,12 @@ import {
   Delete as DeleteIcon,
   Launch as LaunchIcon,
   Refresh as RefreshIcon,
+  Share as ShareIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { chatbotRegistryService } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
+import ShareModal from '../components/ShareModal';
 
 function ChatbotListPage() {
   const navigate = useNavigate();
@@ -42,6 +44,7 @@ function ChatbotListPage() {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [selectedChatbot, setSelectedChatbot] = React.useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [shareModalOpen, setShareModalOpen] = React.useState(false);
   const { user } = useAuth();
 
   const {
@@ -175,14 +178,14 @@ function ChatbotListPage() {
             <Button
               variant="outlined"
               size="small"
-              startIcon={<LaunchIcon />}
+              startIcon={<ShareIcon />}
               onClick={(e) => {
                 e.stopPropagation();
-                // TODO: Add frontend URL when available
-                console.log('Open chatbot:', chatbot.id);
+                setSelectedChatbot(chatbot);
+                setShareModalOpen(true);
               }}
             >
-              Öffnen
+              Teilen
             </Button>
           </Box>
 
@@ -389,13 +392,23 @@ function ChatbotListPage() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            // TODO: Add frontend URL when available
-            console.log('Open chatbot in new tab:', selectedChatbot?.id);
+            setShareModalOpen(true);
+            handleMenuClose();
+          }}
+        >
+          <ShareIcon sx={{ mr: 1 }} />
+          Teilen & Einbetten
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            const API_BASE = process.env.REACT_APP_API_BASE || 'https://api.helferlain.app';
+            const publicUrl = `${API_BASE}/chat/${selectedChatbot?.id}`;
+            window.open(publicUrl, '_blank', 'noopener,noreferrer');
             handleMenuClose();
           }}
         >
           <LaunchIcon sx={{ mr: 1 }} />
-          In neuem Tab öffnen
+          Öffentlichen Chat öffnen
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -424,6 +437,13 @@ function ChatbotListPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Share Modal */}
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        chatbot={selectedChatbot}
+      />
     </Box>
   );
 }

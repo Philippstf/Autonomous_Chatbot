@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -14,72 +14,241 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Badge,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
   AccountCircle as AccountCircleIcon,
   Brightness4 as Brightness4Icon,
+  Brightness7 as Brightness7Icon,
   Menu as MenuIcon,
   Logout as LogoutIcon,
   Settings as SettingsIcon,
   Person as PersonIcon,
+  TrendingUp as TrendingUpIcon,
+  Speed as SpeedIcon,
+  Security as SecurityIcon,
+  CloudQueue as CloudIcon,
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
 
 const pageConfig = {
   '/': {
-    title: 'Dashboard',
-    subtitle: 'Platform Overview & Analytics',
-    emoji: '📊'
+    title: 'Mission Control',
+    subtitle: 'AI Operations Dashboard',
+    emoji: '🚀',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    bgPattern: 'radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%)'
   },
   '/create': {
-    title: 'Create Chatbot',
-    subtitle: 'Build Your AI Assistant',
-    emoji: '🤖'
+    title: 'Neural Forge',
+    subtitle: 'Build Next-Gen AI Assistants',
+    emoji: '🧠',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    bgPattern: 'radial-gradient(circle at 80% 20%, rgba(240, 147, 251, 0.3) 0%, transparent 50%)'
   },
   '/chatbots': {
-    title: 'My Chatbots',
-    subtitle: 'Manage Your AI Assistants',
-    emoji: '🚀'
+    title: 'AI Arsenal',
+    subtitle: 'Manage Your Digital Workforce',
+    emoji: '🤖',
+    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    bgPattern: 'radial-gradient(circle at 60% 80%, rgba(79, 172, 254, 0.3) 0%, transparent 50%)'
   },
   '/analytics': {
-    title: 'Analytics',
-    subtitle: 'Performance Insights & Metrics',
-    emoji: '📈'
+    title: 'Data Nexus',
+    subtitle: 'Advanced Intelligence Metrics',
+    emoji: '📊',
+    gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    bgPattern: 'radial-gradient(circle at 40% 40%, rgba(67, 233, 123, 0.3) 0%, transparent 50%)'
   },
   '/settings': {
-    title: 'Settings',
-    subtitle: 'Platform Configuration',
-    emoji: '⚙️'
+    title: 'Command Center',
+    subtitle: 'System Configuration',
+    emoji: '⚙️',
+    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    bgPattern: 'radial-gradient(circle at 70% 30%, rgba(250, 112, 154, 0.3) 0%, transparent 50%)'
   },
   '/help': {
-    title: 'Help & Support',
+    title: 'Knowledge Base',
     subtitle: 'Documentation & Resources',
-    emoji: '❓'
+    emoji: '📚',
+    gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    bgPattern: 'radial-gradient(circle at 30% 70%, rgba(168, 237, 234, 0.3) 0%, transparent 50%)'
   },
 };
 
-function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
+const SystemStatusChip = ({ status = 'online' }) => {
+  const theme = useTheme();
+  const statusConfig = {
+    online: {
+      label: 'NEURAL NET ACTIVE',
+      color: '#00ff88',
+      icon: '🟢',
+      pulse: true
+    },
+    warning: {
+      label: 'SYSTEM ALERT',
+      color: '#ffaa00',
+      icon: '🟡',
+      pulse: true
+    },
+    error: {
+      label: 'SYSTEM ERROR',
+      color: '#ff4444',
+      icon: '🔴',
+      pulse: true
+    }
+  };
+
+  const config = statusConfig[status];
+
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <Chip
+        label={config.label}
+        size="small"
+        sx={{
+          background: `linear-gradient(135deg, ${alpha(config.color, 0.2)}, ${alpha(config.color, 0.1)})`,
+          border: `1px solid ${alpha(config.color, 0.3)}`,
+          color: config.color,
+          fontWeight: 700,
+          fontSize: '0.7rem',
+          letterSpacing: '0.5px',
+          fontFamily: 'monospace',
+          textTransform: 'uppercase',
+          backdropFilter: 'blur(10px)',
+          animation: config.pulse ? 'statusPulse 2s infinite' : 'none',
+          '@keyframes statusPulse': {
+            '0%': { 
+              boxShadow: `0 0 0 0 ${alpha(config.color, 0.4)}`,
+              transform: 'scale(1)'
+            },
+            '50%': { 
+              boxShadow: `0 0 0 4px ${alpha(config.color, 0.1)}`,
+              transform: 'scale(1.02)'
+            },
+            '100%': { 
+              boxShadow: `0 0 0 0 ${alpha(config.color, 0)}`,
+              transform: 'scale(1)'
+            },
+          },
+          '&::before': {
+            content: `"${config.icon}"`,
+            marginRight: '4px',
+            fontSize: '8px'
+          }
+        }}
+      />
+    </motion.div>
+  );
+};
+
+const StatusIndicators = () => {
+  const [metrics, setMetrics] = useState({
+    cpu: 45,
+    memory: 67,
+    response: 120,
+    uptime: 99.8
+  });
+
+  useEffect(() => {
+    // Simulate real-time metrics
+    const interval = setInterval(() => {
+      setMetrics(prev => ({
+        cpu: Math.max(10, Math.min(90, prev.cpu + (Math.random() - 0.5) * 10)),
+        memory: Math.max(20, Math.min(85, prev.memory + (Math.random() - 0.5) * 8)),
+        response: Math.max(50, Math.min(200, prev.response + (Math.random() - 0.5) * 20)),
+        uptime: Math.max(95, Math.min(100, prev.uptime + (Math.random() - 0.5) * 0.1))
+      }));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Box sx={{ 
+      display: { xs: 'none', lg: 'flex' }, 
+      alignItems: 'center', 
+      gap: 2,
+      mr: 2
+    }}>
+      <Tooltip title={`CPU Usage: ${metrics.cpu.toFixed(0)}%`}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 0.5,
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+          fontFamily: 'monospace'
+        }}>
+          <SpeedIcon sx={{ fontSize: 12 }} />
+          {metrics.cpu.toFixed(0)}%
+        </Box>
+      </Tooltip>
+      
+      <Tooltip title={`Response Time: ${metrics.response.toFixed(0)}ms`}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 0.5,
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+          fontFamily: 'monospace'
+        }}>
+          <TrendingUpIcon sx={{ fontSize: 12 }} />
+          {metrics.response.toFixed(0)}ms
+        </Box>
+      </Tooltip>
+      
+      <Tooltip title={`Uptime: ${metrics.uptime.toFixed(1)}%`}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 0.5,
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+          fontFamily: 'monospace'
+        }}>
+          <SecurityIcon sx={{ fontSize: 12 }} />
+          {metrics.uptime.toFixed(1)}%
+        </Box>
+      </Tooltip>
+    </Box>
+  );
+};
+
+function Header({ onSidebarToggle, sidebarOpen, isMobile, darkMode, onThemeToggle }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [notifications, setNotifications] = useState(3);
   
   // Get current page config or default
   const currentPage = pageConfig[location.pathname] || {
-    title: 'Chatbot Platform',
-    subtitle: 'Professional AI Assistant Platform',
-    emoji: '🚀'
+    title: 'HelferLain',
+    subtitle: 'AI Assistant Platform',
+    emoji: '🚀',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    bgPattern: 'radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.3) 0%, transparent 50%)'
   };
 
   // Extract chatbot ID from dynamic routes
   const chatbotMatch = location.pathname.match(/\/chatbot\/(.+)/);
   if (chatbotMatch) {
-    currentPage.title = 'Chatbot Chat';
-    currentPage.subtitle = `Chat with AI Assistant`;
+    currentPage.title = 'Neural Interface';
+    currentPage.subtitle = `AI Communication Portal`;
     currentPage.emoji = '💬';
+    currentPage.gradient = 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)';
   }
 
   const handleMenuOpen = (event) => {
@@ -107,7 +276,7 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (!user) return 'U';
+    if (!user) return 'AI';
     const name = user.displayName || user.email;
     if (name) {
       const parts = name.split(' ');
@@ -125,33 +294,71 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
       elevation={0}
       sx={{
         background: 'transparent',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: currentPage.bgPattern,
+          opacity: 0.6,
+          zIndex: -1,
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backdropFilter: 'blur(20px) saturate(120%)',
+          background: alpha(theme.palette.background.paper, 0.8),
+          zIndex: -1,
+        }
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between', py: 2 }}>
+      <Toolbar sx={{ 
+        justifyContent: 'space-between', 
+        py: 2,
+        position: 'relative',
+        zIndex: 1
+      }}>
         {/* Mobile Menu Button */}
         {isMobile && (
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={onSidebarToggle}
-            edge="start"
-            sx={{
-              mr: 2,
-              color: 'text.primary',
-              '&:hover': {
-                backgroundColor: 'rgba(31, 58, 147, 0.1)',
-              },
-            }}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <MenuIcon />
-          </IconButton>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              onClick={onSidebarToggle}
+              edge="start"
+              sx={{
+                mr: 2,
+                color: 'text.primary',
+                background: alpha(theme.palette.primary.main, 0.1),
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                '&:hover': {
+                  background: alpha(theme.palette.primary.main, 0.2),
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+                },
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </motion.div>
         )}
+
         {/* Page Title Section */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
           style={{ flex: 1 }}
         >
           <Box sx={{ 
@@ -160,124 +367,174 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
             gap: { xs: 1, sm: 2 },
             ml: isMobile ? 0 : 0
           }}>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '1.5rem', sm: '2rem' },
-                filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))',
+            {/* Futuristic Emoji with Glow */}
+            <motion.div
+              animate={{ 
+                rotate: [0, 10, -10, 0],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
               }}
             >
-              {currentPage.emoji}
-            </Typography>
-            <Box>
               <Typography
-                variant={isMobile ? "h5" : "h4"}
-                fontWeight={700}
-                color="text.primary"
+                variant="h4"
                 sx={{
-                  background: 'linear-gradient(135deg, #1f3a93, #34495e)',
+                  fontSize: { xs: '1.8rem', sm: '2.5rem' },
+                  filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.6))',
+                  background: currentPage.gradient,
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  fontSize: { xs: '1.25rem', sm: '2rem' },
                 }}
               >
-                {currentPage.title}
+                {currentPage.emoji}
               </Typography>
-              <Typography
-                variant={isMobile ? "body2" : "subtitle1"}
-                color="text.secondary"
-                sx={{ 
-                  mt: 0.5,
-                  display: { xs: 'none', sm: 'block' }
-                }}
+            </motion.div>
+
+            <Box>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
               >
-                {currentPage.subtitle}
-              </Typography>
+                <Typography
+                  variant={isMobile ? "h5" : "h4"}
+                  fontWeight={900}
+                  sx={{
+                    background: currentPage.gradient,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontSize: { xs: '1.5rem', sm: '2.2rem' },
+                    fontFamily: '"Space Grotesk", "Inter", sans-serif',
+                    letterSpacing: '-0.02em',
+                    textShadow: '0 0 30px rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  {currentPage.title}
+                </Typography>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                <Typography
+                  variant={isMobile ? "body2" : "subtitle1"}
+                  color="text.secondary"
+                  sx={{ 
+                    mt: 0.5,
+                    display: { xs: 'none', sm: 'block' },
+                    fontWeight: 500,
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  {currentPage.subtitle}
+                </Typography>
+              </motion.div>
             </Box>
           </Box>
         </motion.div>
 
-        {/* Right Section - Status & User */}
+        {/* Right Section - Metrics, Status & User */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* System Metrics */}
+            <StatusIndicators />
+            
             {/* Status Chip */}
-            <Chip
-              label="System Online"
-              color="success"
-              size="small"
-              sx={{
-                fontWeight: 600,
-                animation: 'pulse 2s infinite',
-                '@keyframes pulse': {
-                  '0%': { opacity: 1 },
-                  '50%': { opacity: 0.7 },
-                  '100%': { opacity: 1 },
-                },
-              }}
-            />
+            <SystemStatusChip status="online" />
 
             {/* Action Buttons */}
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Tooltip title="Theme Toggle">
-                <IconButton
-                  color="inherit"
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {
-                      color: 'primary.main',
-                      backgroundColor: 'rgba(31, 58, 147, 0.1)',
-                    },
-                  }}
-                >
-                  <Brightness4Icon />
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title="Notifications">
-                <IconButton
-                  color="inherit"
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {
-                      color: 'primary.main',
-                      backgroundColor: 'rgba(31, 58, 147, 0.1)',
-                    },
-                  }}
-                >
-                  <NotificationsIcon />
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title="Konto">
-                <IconButton
-                  color="inherit"
-                  onClick={handleMenuOpen}
-                  sx={{
-                    color: 'text.secondary',
-                    '&:hover': {
-                      color: 'primary.main',
-                      backgroundColor: 'rgba(31, 58, 147, 0.1)',
-                    },
-                  }}
-                >
-                  <Avatar
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <IconButton
+                    onClick={onThemeToggle}
                     sx={{
-                      width: 32,
-                      height: 32,
-                      background: 'linear-gradient(135deg, #1f3a93, #34495e)',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
+                      color: 'text.secondary',
+                      background: alpha(theme.palette.background.paper, 0.5),
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                      '&:hover': {
+                        color: 'primary.main',
+                        background: alpha(theme.palette.primary.main, 0.1),
+                        transform: 'translateY(-1px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                      },
                     }}
                   >
-                    {getUserInitials()}
-                  </Avatar>
-                </IconButton>
+                    {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+                  </IconButton>
+                </motion.div>
+              </Tooltip>
+
+              <Tooltip title="System Notifications">
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <IconButton
+                    sx={{
+                      color: 'text.secondary',
+                      background: alpha(theme.palette.background.paper, 0.5),
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                      '&:hover': {
+                        color: 'primary.main',
+                        background: alpha(theme.palette.primary.main, 0.1),
+                        transform: 'translateY(-1px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                      },
+                    }}
+                  >
+                    <Badge badgeContent={notifications} color="error">
+                      <NotificationsIcon />
+                    </Badge>
+                  </IconButton>
+                </motion.div>
+              </Tooltip>
+
+              <Tooltip title="User Account">
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <IconButton
+                    onClick={handleMenuOpen}
+                    sx={{
+                      p: 0.5,
+                      background: alpha(theme.palette.background.paper, 0.5),
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                      '&:hover': {
+                        background: alpha(theme.palette.primary.main, 0.1),
+                        transform: 'translateY(-1px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                      },
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        background: currentPage.gradient,
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: 'monospace',
+                        border: `2px solid ${alpha(theme.palette.background.paper, 0.8)}`,
+                      }}
+                    >
+                      {getUserInitials()}
+                    </Avatar>
+                  </IconButton>
+                </motion.div>
               </Tooltip>
             </Box>
           </Box>
@@ -285,81 +542,94 @@ function Header({ onSidebarToggle, sidebarOpen, isMobile }) {
       </Toolbar>
       
       {/* User Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        onClick={handleMenuClose}
-        PaperProps={{
-          elevation: 3,
-          sx: {
-            overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-            mt: 1.5,
-            minWidth: 200,
-            '& .MuiAvatar-root': {
-              width: 32,
-              height: 32,
-              ml: -0.5,
-              mr: 1,
-            },
-            '&:before': {
-              content: '""',
-              display: 'block',
-              position: 'absolute',
-              top: 0,
-              right: 14,
-              width: 10,
-              height: 10,
-              bgcolor: 'background.paper',
-              transform: 'translateY(-50%) rotate(45deg)',
-              zIndex: 0,
-            },
-          },
-        }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem onClick={() => {}}>
-          <ListItemIcon>
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                background: 'linear-gradient(135deg, #1f3a93, #34495e)',
-                fontSize: '14px',
-                fontWeight: 600,
-              }}
-            >
-              {getUserInitials()}
-            </Avatar>
-          </ListItemIcon>
-          <ListItemText>
-            <Typography variant="body2" fontWeight={600}>
-              {user?.displayName || user?.email?.split('@')[0] || 'Benutzer'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {user?.email}
-            </Typography>
-          </ListItemText>
-        </MenuItem>
-        
-        <Divider />
-        
-        <MenuItem onClick={handleProfile}>
-          <ListItemIcon>
-            <SettingsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Einstellungen</ListItemText>
-        </MenuItem>
-        
-        <MenuItem onClick={handleLogout}>
-          <ListItemIcon>
-            <LogoutIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Abmelden</ListItemText>
-        </MenuItem>
-      </Menu>
+      <AnimatePresence>
+        {Boolean(anchorEl) && (
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            onClick={handleMenuClose}
+            PaperProps={{
+              elevation: 0,
+              sx: {
+                overflow: 'visible',
+                background: alpha(theme.palette.background.paper, 0.9),
+                backdropFilter: 'blur(20px) saturate(120%)',
+                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                borderRadius: 2,
+                mt: 1.5,
+                minWidth: 220,
+                '& .MuiMenuItem-root': {
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  '&:hover': {
+                    background: alpha(theme.palette.primary.main, 0.1),
+                  }
+                },
+                '&:before': {
+                  content: '""',
+                  display: 'block',
+                  position: 'absolute',
+                  top: 0,
+                  right: 14,
+                  width: 10,
+                  height: 10,
+                  bgcolor: alpha(theme.palette.background.paper, 0.9),
+                  transform: 'translateY(-50%) rotate(45deg)',
+                  border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                  borderBottom: 'none',
+                  borderRight: 'none',
+                  zIndex: 0,
+                },
+              },
+            }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            <MenuItem onClick={() => {}} sx={{ mb: 1 }}>
+              <ListItemIcon>
+                <Avatar
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    background: currentPage.gradient,
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {getUserInitials()}
+                </Avatar>
+              </ListItemIcon>
+              <ListItemText>
+                <Typography variant="body2" fontWeight={600}>
+                  {user?.displayName || user?.email?.split('@')[0] || 'Neural User'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {user?.email}
+                </Typography>
+              </ListItemText>
+            </MenuItem>
+            
+            <Divider sx={{ mx: 1, mb: 1 }} />
+            
+            <MenuItem onClick={handleProfile}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>System Preferences</ListItemText>
+            </MenuItem>
+            
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Disconnect</ListItemText>
+            </MenuItem>
+          </Menu>
+        )}
+      </AnimatePresence>
     </AppBar>
   );
 }
