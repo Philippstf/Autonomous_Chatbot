@@ -46,7 +46,7 @@ class FirestoreStorage:
                 
                 firebase_admin.initialize_app(cred, {
                     'projectId': firebase_config["project_id"],
-                    'storageBucket': 'helferlain-a4178.appspot.com'
+                    'storageBucket': 'helferlain-a4178.firebasestorage.app'
                 })
                 logger.info(f"Firebase Admin SDK initialized for project: {firebase_config['project_id']}")
                 
@@ -56,7 +56,7 @@ class FirestoreStorage:
                 try:
                     firebase_admin.initialize_app(credentials.ApplicationDefault(), {
                         'projectId': os.getenv("FIREBASE_PROJECT_ID", "helferlain-a4178"),
-                        'storageBucket': 'helferlain-a4178.appspot.com'
+                        'storageBucket': 'helferlain-a4178.firebasestorage.app'
                     })
                     logger.warning("Initialized Firebase with minimal configuration")
                 except Exception as fallback_error:

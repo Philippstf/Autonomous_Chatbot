@@ -176,6 +176,23 @@ class MultiSourceRAG:
         """Verarbeitet Website-URL mit einfachem, stabilerem Scraping"""
         try:
             print(f"DEBUG: Starting website processing for {url}")
+            
+            # URL-Validierung und Auto-Korrektur
+            if not url:
+                print("ERROR: Empty URL provided")
+                return []
+            
+            # Auto-korrigiere häufige URL-Fehler
+            url = url.strip()
+            if url.startswith('httpa://'):
+                url = url.replace('httpa://', 'https://')
+                print(f"DEBUG: Auto-corrected URL from httpa:// to https://: {url}")
+            elif not url.startswith(('http://', 'https://')):
+                url = 'https://' + url
+                print(f"DEBUG: Auto-added https:// prefix: {url}")
+            
+            print(f"DEBUG: Final processed URL: {url}")
+            
             import requests
             from bs4 import BeautifulSoup
             

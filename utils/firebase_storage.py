@@ -25,7 +25,7 @@ class FirebaseStorageManager:
         """
         try:
             # Firebase Storage Bucket initialisieren
-            bucket_name = bucket_name or "helferlain-a4178.appspot.com"
+            bucket_name = bucket_name or "helferlain-a4178.firebasestorage.app"
             
             # Einfacher direkter Ansatz: Forciere die Bucket-Erstellung
             import firebase_admin
