@@ -426,7 +426,7 @@ Anweisungen:
             ]
             
             response = router_client.chat.completions.create(
-                model="mistralai/mistral-small-3.2-24b-instruct:free",
+                model="meta-llama/llama-3.2-3b-instruct:free",
                 messages=messages,
                 temperature=0.2,
                 max_tokens=512
