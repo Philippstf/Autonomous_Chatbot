@@ -168,13 +168,15 @@
                 }
                 
                 .helferlain-message-bubble {
-                    max-width: 80%;
-                    padding: 10px 14px;
+                    max-width: 85%;
+                    padding: 12px 16px;
                     border-radius: 18px;
                     font-size: 14px;
                     line-height: 1.4;
-                    white-space: pre-wrap;
-                    word-break: break-word;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    white-space: normal;
+                    text-align: left;
                 }
                 
                 .helferlain-message.user .helferlain-message-bubble {
@@ -356,16 +358,20 @@
         addWelcomeMessage(container) {
             const welcomeMessage = document.createElement('div');
             welcomeMessage.className = 'helferlain-message assistant';
-            welcomeMessage.innerHTML = `
-                <div class="helferlain-message-bubble">
-                    Hallo! 👋 Ich bin ${this.botConfig?.name || 'Ihr Chatbot'}. 
-                    Wie kann ich Ihnen heute helfen?
-                </div>
-            `;
+            
+            const botName = this.botConfig?.name || 'Chatbot';
+            const welcomeText = `Hallo! 👋 Wie kann ich Ihnen helfen?`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'helferlain-message-bubble';
+            bubble.textContent = welcomeText;
+            
+            welcomeMessage.appendChild(bubble);
             container.appendChild(welcomeMessage);
+            
             this.messages.push({
                 role: 'assistant',
-                content: `Hallo! 👋 Ich bin ${this.botConfig?.name || 'Ihr Chatbot'}. Wie kann ich Ihnen heute helfen?`
+                content: welcomeText
             });
         }
         
