@@ -19,6 +19,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import ImpressumPage from './pages/ImpressumPage';
 import ContactPage from './pages/ContactPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import PublicChatbotPage from './pages/PublicChatbotPage';
 
 // Import components
 import Navigation from './components/Navigation';
@@ -31,8 +32,9 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const location = useLocation();
 
-  // Check if we're on a public page (landing, auth, or legal pages)
-  const isPublicPage = ['/', '/auth', '/privacy', '/impressum', '/contact', '/terms'].includes(location.pathname);
+  // Check if we're on a public page (landing, auth, legal pages, or public chatbot)
+  const isPublicPage = ['/', '/auth', '/privacy', '/impressum', '/contact', '/terms'].includes(location.pathname) || 
+                       location.pathname.startsWith('/public/');
 
   // Automatically close sidebar on mobile, open on desktop
   useEffect(() => {
@@ -55,6 +57,7 @@ function App() {
             <Route path="/impressum" element={<ImpressumPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/public/:publicId" element={<PublicChatbotPage />} />
           </Routes>
         ) : (
           /* Protected app layout with sidebar/header */

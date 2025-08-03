@@ -110,6 +110,60 @@ export const chatbotRegistryService = {
   async deleteChatbot(chatbotId) {
     const docRef = doc(db, COLLECTIONS.CHATBOT_REGISTRY, chatbotId);
     await deleteDoc(docRef);
+  },
+
+  async generatePublicId(chatbotId) {
+    const chatbot = await this.getChatbot(chatbotId);
+    if (!chatbot) throw new Error('Chatbot not found');
+    
+    // Generate unique public ID if not exists
+    if (!chatbot.publicId) {
+      const publicId = Math.random().toString(36).substring(2, 10);
+      await this.updateChatbot(chatbotId, { publicId });
+      return publicId;
+    }
+    return chatbot.publicId;
+  },
+
+  async getChatbotByPublicId(publicId) {
+    const q = query(
+      collection(db, COLLECTIONS.CHATBOT_REGISTRY),
+      where('publicId', '==', publicId)
+    );
+    const querySnapshot = await getDocs(q);
+    const docs = querySnapshot.docs;
+    return docs.length > 0 ? { id: docs[0].id, ...docs[0].data() } : null;
+  },
+
+  async generateApiKey(chatbotId) {
+    const chatbot = await this.getChatbot(chatbotId);
+    if (!chatbot) throw new Error('Chatbot not found');
+    
+    // Generate new API key
+    const apiKey = `hlfr_${Math.random().toString(36).substring(2, 26)}`;
+    const apiKeys = chatbot.apiKeys || [];
+    apiKeys.push(apiKey);
+    
+    await this.updateChatbot(chatbotId, { apiKeys });
+    return apiKey;
+  },
+
+  async validateApiKey(apiKey) {
+    const q = query(
+      collection(db, COLLECTIONS.CHATBOT_REGISTRY),
+      where('apiKeys', 'array-contains', apiKey)
+    );
+    const querySnapshot = await getDocs(q);
+    const docs = querySnapshot.docs;
+    return docs.length > 0 ? { id: docs[0].id, ...docs[0].data() } : null;
+  },
+
+  async removeApiKey(chatbotId, apiKey) {
+    const chatbot = await this.getChatbot(chatbotId);
+    if (!chatbot) throw new Error('Chatbot not found');
+    
+    const apiKeys = (chatbot.apiKeys || []).filter(key => key !== apiKey);
+    await this.updateChatbot(chatbotId, { apiKeys });
   }
 };
 
