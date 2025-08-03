@@ -53,16 +53,16 @@ function BrandingStep({ formData, updateFormData }) {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{ color: '#374151', fontWeight: 600 }}>
         🎨 Design & Branding
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="body1" sx={{ mb: 3, color: '#6b7280' }}>
         Gestalten Sie das Aussehen Ihres Chatbots
       </Typography>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ color: '#374151', fontWeight: 600 }}>
             Farbschema
           </Typography>
           
@@ -98,12 +98,37 @@ function BrandingStep({ formData, updateFormData }) {
             value={formData.branding?.welcome_message || ''}
             onChange={(e) => handleBrandingChange('welcome_message', e.target.value)}
             placeholder="Hallo! Ich bin Ihr persönlicher Assistent..."
-            sx={{ mt: 3 }}
+            sx={{ 
+              mt: 3,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 2,
+                '& fieldset': {
+                  borderColor: '#e5e7eb',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#d1d5db',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1e3a8a',
+                  borderWidth: '2px',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: '#6b7280',
+                '&.Mui-focused': {
+                  color: '#1e3a8a',
+                }
+              },
+              '& .MuiInputBase-input': {
+                color: '#374151',
+              }
+            }}
           />
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ color: '#374151', fontWeight: 600 }}>
             Vorschau
           </Typography>
           <Card>

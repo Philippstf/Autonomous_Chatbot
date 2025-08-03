@@ -96,7 +96,7 @@ function ChatbotListPage() {
           cursor: 'pointer',
           transition: 'all 0.3s ease',
           '&:hover': {
-            boxShadow: '0 8px 32px rgba(31, 58, 147, 0.2)',
+            boxShadow: '0 8px 32px rgba(30, 58, 138, 0.2)',
           },
         }}
       >
@@ -270,9 +270,9 @@ function ChatbotListPage() {
               onClick={() => navigate('/create')}
               size={isMobile ? 'small' : 'medium'}
               sx={{
-                background: 'linear-gradient(135deg, #1f3a93, #34495e)',
+                background: 'linear-gradient(45deg, #1e3a8a, #3b82f6)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #4a69bd, #5a6c7d)',
+                  background: 'linear-gradient(45deg, #1e40af, #2563eb)',
                 },
               }}
             >

@@ -26,16 +26,20 @@ function BasicSettingsStep({ formData, updateFormData }) {
       <Typography 
         variant={isMobile ? 'h6' : 'h5'} 
         gutterBottom
-        sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+        sx={{ 
+          fontSize: { xs: '1.25rem', sm: '1.5rem' },
+          color: '#374151',
+          fontWeight: 600
+        }}
       >
         📋 Grundeinstellungen
       </Typography>
       <Typography 
-        variant="body2" 
-        color="text.secondary" 
+        variant="body1" 
         sx={{ 
           mb: 3,
           fontSize: { xs: '0.875rem', sm: '1rem' },
+          color: '#6b7280',
           display: { xs: 'none', sm: 'block' }
         }}
       >
@@ -50,36 +54,29 @@ function BasicSettingsStep({ formData, updateFormData }) {
         placeholder="z.B. Kundenservice Assistant, Support Bot"
         sx={{ 
           mb: 3,
-          '& .MuiInputBase-input': {
-            fontSize: { xs: '16px', sm: '14px' }, // Prevents zoom on iOS
-            color: '#ffffff',
-            backgroundColor: 'rgba(15, 23, 42, 0.8)',
-            borderRadius: '8px',
-            padding: '12px 16px',
-          },
-          '& .MuiInputLabel-root': {
-            color: 'rgba(255, 255, 255, 0.7)',
-            '&.Mui-focused': {
-              color: '#3b82f6',
-            }
-          },
           '& .MuiOutlinedInput-root': {
-            backgroundColor: 'rgba(15, 23, 42, 0.8)',
-            borderRadius: '8px',
+            backgroundColor: '#ffffff',
+            borderRadius: 2,
             '& fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.2)',
+              borderColor: '#e5e7eb',
             },
             '&:hover fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.4)',
+              borderColor: '#d1d5db',
             },
             '&.Mui-focused fieldset': {
-              borderColor: '#3b82f6',
+              borderColor: '#1e3a8a',
               borderWidth: '2px',
             },
           },
-          '& .MuiInputBase-input::placeholder': {
-            color: 'rgba(255, 255, 255, 0.5)',
-            opacity: 1,
+          '& .MuiInputLabel-root': {
+            color: '#6b7280',
+            '&.Mui-focused': {
+              color: '#1e3a8a',
+            }
+          },
+          '& .MuiInputBase-input': {
+            color: '#374151',
+            fontSize: { xs: '16px', sm: '14px' },
           }
         }}
         required
@@ -95,36 +92,29 @@ function BasicSettingsStep({ formData, updateFormData }) {
         placeholder="Beschreiben Sie den Zweck und die Aufgaben Ihres Chatbots..."
         sx={{ 
           mb: 3,
-          '& .MuiInputBase-input': {
-            fontSize: { xs: '16px', sm: '14px' },
-            color: '#ffffff',
-            backgroundColor: 'rgba(15, 23, 42, 0.8)',
-            borderRadius: '8px',
-            padding: '12px 16px',
-          },
-          '& .MuiInputLabel-root': {
-            color: 'rgba(255, 255, 255, 0.7)',
-            '&.Mui-focused': {
-              color: '#3b82f6',
-            }
-          },
           '& .MuiOutlinedInput-root': {
-            backgroundColor: 'rgba(15, 23, 42, 0.8)',
-            borderRadius: '8px',
+            backgroundColor: '#ffffff',
+            borderRadius: 2,
             '& fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.2)',
+              borderColor: '#e5e7eb',
             },
             '&:hover fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.4)',
+              borderColor: '#d1d5db',
             },
             '&.Mui-focused fieldset': {
-              borderColor: '#3b82f6',
+              borderColor: '#1e3a8a',
               borderWidth: '2px',
             },
           },
-          '& .MuiInputBase-input::placeholder': {
-            color: 'rgba(255, 255, 255, 0.5)',
-            opacity: 1,
+          '& .MuiInputLabel-root': {
+            color: '#6b7280',
+            '&.Mui-focused': {
+              color: '#1e3a8a',
+            }
+          },
+          '& .MuiInputBase-input': {
+            color: '#374151',
+            fontSize: { xs: '16px', sm: '14px' },
           }
         }}
       />
@@ -142,13 +132,13 @@ function BasicSettingsStep({ formData, updateFormData }) {
               label={option} 
               {...getTagProps({ index })}
               sx={{
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                borderColor: '#3b82f6',
-                color: '#ffffff',
+                backgroundColor: '#f0f9ff',
+                borderColor: '#1e3a8a',
+                color: '#1e3a8a',
                 '& .MuiChip-deleteIcon': {
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  color: '#6b7280',
                   '&:hover': {
-                    color: '#ffffff',
+                    color: '#1e3a8a',
                   }
                 }
               }}
@@ -161,46 +151,39 @@ function BasicSettingsStep({ formData, updateFormData }) {
             label="Tags / Kategorien"
             placeholder="Wählen Sie Kategorien oder fügen Sie eigene hinzu..."
             sx={{
-              '& .MuiInputBase-input': {
-                fontSize: { xs: '16px', sm: '14px' },
-                color: '#ffffff',
-                backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                borderRadius: '8px',
-                padding: '12px 16px',
-              },
-              '& .MuiInputLabel-root': {
-                color: 'rgba(255, 255, 255, 0.7)',
-                '&.Mui-focused': {
-                  color: '#3b82f6',
-                }
-              },
               '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                borderRadius: '8px',
+                backgroundColor: '#ffffff',
+                borderRadius: 2,
                 '& fieldset': {
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  borderColor: '#e5e7eb',
                 },
                 '&:hover fieldset': {
-                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                  borderColor: '#d1d5db',
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: '#3b82f6',
+                  borderColor: '#1e3a8a',
                   borderWidth: '2px',
                 },
               },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.5)',
-                opacity: 1,
+              '& .MuiInputLabel-root': {
+                color: '#6b7280',
+                '&.Mui-focused': {
+                  color: '#1e3a8a',
+                }
+              },
+              '& .MuiInputBase-input': {
+                color: '#374151',
+                fontSize: { xs: '16px', sm: '14px' },
               }
             }}
           />
         )}
         sx={{
           '& .MuiAutocomplete-popupIndicator': {
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: '#6b7280',
           },
           '& .MuiAutocomplete-clearIndicator': {
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: '#6b7280',
           }
         }}
       />

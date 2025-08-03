@@ -41,12 +41,39 @@ function CompanyInfoStep({ formData, updateFormData }) {
     '51-200 Mitarbeiter', '200+ Mitarbeiter'
   ];
 
+  // Clean CI styling for text fields
+  const textFieldStyle = {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: '#ffffff',
+      borderRadius: 2,
+      '& fieldset': {
+        borderColor: '#e5e7eb',
+      },
+      '&:hover fieldset': {
+        borderColor: '#d1d5db',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#1e3a8a',
+        borderWidth: '2px',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: '#6b7280',
+      '&.Mui-focused': {
+        color: '#1e3a8a',
+      }
+    },
+    '& .MuiInputBase-input': {
+      color: '#374151',
+    }
+  };
+
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{ color: '#374151', fontWeight: 600 }}>
         🏢 Unternehmensdaten
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="body1" sx={{ mb: 3, color: '#6b7280' }}>
         Geben Sie Ihre Kontaktdaten und Unternehmensinformationen ein
       </Typography>
 
@@ -58,7 +85,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             value={formData.company_info?.company_name || ''}
             onChange={(e) => handleCompanyInfoChange('company_name', e.target.value)}
             required
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
 
           <TextField
@@ -67,7 +94,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             label="Branche"
             value={formData.company_info?.industry || ''}
             onChange={(e) => handleCompanyInfoChange('industry', e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           >
             {industries.map((industry) => (
               <MenuItem key={industry} value={industry}>
@@ -82,7 +109,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             label="Unternehmensgröße"
             value={formData.company_info?.company_size || ''}
             onChange={(e) => handleCompanyInfoChange('company_size', e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           >
             {companySizes.map((size) => (
               <MenuItem key={size} value={size}>
@@ -99,7 +126,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             value={formData.company_info?.website || ''}
             onChange={(e) => handleCompanyInfoChange('website', e.target.value)}
             placeholder="https://www.ihre-firma.de"
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
 
           <TextField
@@ -109,7 +136,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             value={formData.company_info?.email || ''}
             onChange={(e) => handleCompanyInfoChange('email', e.target.value)}
             required
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
 
           <TextField
@@ -118,12 +145,12 @@ function CompanyInfoStep({ formData, updateFormData }) {
             value={formData.company_info?.phone || ''}
             onChange={(e) => handleCompanyInfoChange('phone', e.target.value)}
             placeholder="+49 123 456789"
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
         </Grid>
 
         <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, color: '#374151', fontWeight: 600 }}>
             📍 Adresse
           </Typography>
         </Grid>
@@ -134,7 +161,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             label="Straße & Hausnummer"
             value={formData.company_info?.address?.street || ''}
             onChange={(e) => handleAddressChange('street', e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
         </Grid>
 
@@ -144,7 +171,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             label="PLZ"
             value={formData.company_info?.address?.zip_code || ''}
             onChange={(e) => handleAddressChange('zip_code', e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
         </Grid>
 
@@ -154,7 +181,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             label="Stadt"
             value={formData.company_info?.address?.city || ''}
             onChange={(e) => handleAddressChange('city', e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, ...textFieldStyle }}
           />
         </Grid>
 
@@ -165,6 +192,7 @@ function CompanyInfoStep({ formData, updateFormData }) {
             label="Land"
             value={formData.company_info?.address?.country || 'Deutschland'}
             onChange={(e) => handleAddressChange('country', e.target.value)}
+            sx={textFieldStyle}
           >
             <MenuItem value="Deutschland">Deutschland</MenuItem>
             <MenuItem value="Österreich">Österreich</MenuItem>
