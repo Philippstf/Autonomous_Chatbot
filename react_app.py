@@ -29,6 +29,11 @@ from utils.pdf_processor import document_processor
 from utils.firebase_auth import get_current_user, get_current_user_hybrid
 from utils.firestore_storage import FirestoreStorage
 
+# Import proper system prompt builder
+import sys
+sys.path.append('pages')
+from chatbot import build_system_prompt_for_chatbot
+
 # Load environment variables
 load_dotenv()
 
@@ -597,10 +602,64 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
         )
         
         # Generate response
-        response_data = rag_system.get_response(
-            query=message.message,
-            conversation_id=conversation_id
-        )
+        # Generate response using proper system prompt (same as public chat now)
+        try:
+            # Get relevant chunks
+            relevant_chunks = rag_system.retrieve_chunks(message.message, top_k=5)
+            
+            if not relevant_chunks:
+                response_text = "Entschuldigung, ich konnte keine relevanten Informationen zu Ihrer Frage finden."
+                sources = []
+            else:
+                # Build proper system prompt using the same method as Streamlit
+                messages = build_system_prompt_for_chatbot(
+                    config=chatbot_config,
+                    context=relevant_chunks,
+                    user_question=message.message,
+                    chat_history=[]  # Could be extended with conversation history
+                )
+                
+                # Use OpenRouter API directly with proper prompt
+                router_api_key = os.getenv("OPENROUTER_API_KEY")
+                if not router_api_key:
+                    raise Exception("OpenRouter API-Key not configured")
+                
+                router_client = OpenAI(
+                    api_key=router_api_key,
+                    base_url="https://openrouter.ai/api/v1"
+                )
+                
+                response = router_client.chat.completions.create(
+                    model="tngtech/deepseek-r1t2-chimera:free",
+                    messages=messages,
+                    temperature=0.2,
+                    max_tokens=512
+                )
+                
+                response_text = response.choices[0].message.content.strip()
+                
+                # Prepare sources for frontend
+                sources = [
+                    {
+                        "source_name": chunk.get('source_name', 'Unbekannt'),
+                        "text": chunk['text'][:200] + "..." if len(chunk['text']) > 200 else chunk['text'],
+                        "relevance_score": chunk.get('relevance_score', 0.0)
+                    }
+                    for chunk in relevant_chunks[:3]  # Top 3 sources
+                ]
+            
+            response_data = {
+                "response": response_text,
+                "sources": sources
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating response with proper prompt: {e}")
+            # Fallback to generic RAG system
+            response_data = rag_system.get_response(
+                query=message.message,
+                conversation_id=conversation_id
+            )
         
         # 🚀 VuBot 3.0 - ULTRA-EINFACHE Modal-Trigger-Logik
         
@@ -1308,11 +1367,67 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         # Get client IP for analytics
         client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
         
-        # Generate response using RAG system (same method as private chat)
-        response_data = rag_system.get_response(
-            query=message.message,
-            conversation_id=conversation_id
-        )
+        # Generate response using proper system prompt (like Streamlit version)
+        try:
+            # Get relevant chunks
+            relevant_chunks = rag_system.retrieve_chunks(message.message, top_k=5)
+            
+            if not relevant_chunks:
+                response_text = "Entschuldigung, ich konnte keine relevanten Informationen zu Ihrer Frage finden."
+                sources = []
+            else:
+                # Build proper system prompt using the same method as Streamlit
+                messages = build_system_prompt_for_chatbot(
+                    config=chatbot_config,
+                    context=relevant_chunks,
+                    user_question=message.message,
+                    chat_history=[]  # No chat history for public chats
+                )
+                
+                # Use OpenRouter API directly with proper prompt
+                import os
+                from openai import OpenAI
+                
+                router_api_key = os.getenv("OPENROUTER_API_KEY")
+                if not router_api_key:
+                    raise Exception("OpenRouter API-Key not configured")
+                
+                router_client = OpenAI(
+                    api_key=router_api_key,
+                    base_url="https://openrouter.ai/api/v1"
+                )
+                
+                response = router_client.chat.completions.create(
+                    model="tngtech/deepseek-r1t2-chimera:free",
+                    messages=messages,
+                    temperature=0.2,
+                    max_tokens=512
+                )
+                
+                response_text = response.choices[0].message.content.strip()
+                
+                # Prepare sources for frontend
+                sources = [
+                    {
+                        "source_name": chunk.get('source_name', 'Unbekannt'),
+                        "text": chunk['text'][:200] + "..." if len(chunk['text']) > 200 else chunk['text'],
+                        "relevance_score": chunk.get('relevance_score', 0.0)
+                    }
+                    for chunk in relevant_chunks[:3]  # Top 3 sources
+                ]
+            
+            response_data = {
+                "response": response_text,
+                "sources": sources
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating response with proper prompt: {e}")
+            # Fallback to generic RAG system
+            response_data = rag_system.get_response(
+                query=message.message,
+                conversation_id=conversation_id
+            )
         
         # Create response
         response = ChatResponse(
