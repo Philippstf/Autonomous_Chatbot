@@ -21,6 +21,7 @@ import {
 import {
   Share as ShareIcon,
   ContentCopy as CopyIcon,
+  ContentCopy as ContentCopyIcon,
   Delete as DeleteIcon,
   Code as CodeIcon,
   Link as LinkIcon,
@@ -209,32 +210,82 @@ function SharingModal({ open, onClose, chatbot }) {
             )}
           </TabPanel>
 
-          {/* iframe Widget Tab */}
+          {/* Widget Tab */}
           <TabPanel value={activeTab} index={1}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
               <Typography variant="h6" gutterBottom>
-                📎 Website Widget
+                🎯 Dynamisches Chat Widget
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Betten Sie den Chatbot als Widget in Ihre Website ein
+                Modernes Chat-Widget mit schweebendem Button und Modal-Fenster
               </Typography>
             </Box>
 
             {publicId ? (
-              <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  iframe Code für Ihre Website:
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={6}
-                  value={iframeCode}
-                  variant="outlined"
-                  size="small"
-                  InputProps={{ readOnly: true }}
-                  sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
-                />
+              <>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2">
+                    ✨ <strong>Neu:</strong> Unser Chat-Widget öffnet sich als elegantes Modal-Fenster mit schwebendem Button rechts unten - kein statischer iFrame mehr!
+                  </Typography>
+                </Alert>
+                
+                <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    💫 Dynamisches Widget (Empfohlen):
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={5}
+                    value={`<script>
+  (function() {
+    var widget = document.createElement('script');
+    widget.src = 'https://helferlain-a4178.web.app/widget.js?bot=${publicId}';
+    document.head.appendChild(widget);
+  })();
+</script>`}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Fügen Sie diesen Code vor dem &lt;/body&gt; Tag ein
+                    </Typography>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => {
+                        const widgetCode = `<script>
+  (function() {
+    var widget = document.createElement('script');
+    widget.src = 'https://helferlain-a4178.web.app/widget.js?bot=${publicId}';
+                        document.head.appendChild(widget);
+  })();
+</script>`;
+                        navigator.clipboard.writeText(widgetCode);
+                        // You might want to show a toast notification here
+                      }}
+                    >
+                      <ContentCopyIcon />
+                    </IconButton>
+                  </Box>
+                </Paper>
+
+                <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    📱 Classic iFrame (Fallback):
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={6}
+                    value={iframeCode}
+                    variant="outlined"
+                    size="small"
+                    InputProps={{ readOnly: true }}
+                    sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                  />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
                   <Typography variant="caption" color="text.secondary">
                     📋 Kopieren Sie diesen Code und fügen Sie ihn in Ihre Website ein
@@ -248,6 +299,7 @@ function SharingModal({ open, onClose, chatbot }) {
                   </Button>
                 </Box>
               </Paper>
+              </>
             ) : (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
