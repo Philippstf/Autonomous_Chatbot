@@ -1167,6 +1167,103 @@ async def serve_chatbot_page(chatbot_id: str):
     else:
         return {"message": f"Chatbot {chatbot_id} - React frontend not built"}
 
+# ─── Public Chatbot Endpoints ─────────────────────────────────────────────────
+
+@app.get("/api/v1/public/bot/{bot_id}")
+async def get_public_bot_info(bot_id: str):
+    """
+    Get public bot information for widget initialization and chat interface
+    No authentication required
+    """
+    try:
+        logger.info(f"🔍 Public bot info request for bot: {bot_id}")
+        
+        # Find chatbot config
+        all_configs = firestore_storage.db.collection(
+            firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
+        ).where('id', '==', bot_id).limit(1).stream()
+        
+        config_doc = None
+        for doc in all_configs:
+            config_doc = doc
+            break
+        
+        if not config_doc:
+            raise HTTPException(status_code=404, detail="Bot not found or inactive")
+        
+        config_data = config_doc.to_dict()
+        
+        # Return public bot information
+        return {
+            "bot_id": bot_id,
+            "name": config_data.get('name', 'Chatbot'),
+            "description": config_data.get('description', ''),
+            "available": True,
+            "branding": config_data.get('branding', {}),
+            "features": config_data.get('features', {})
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting public bot info {bot_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/v1/public/bot/{bot_id}/chat", response_model=ChatResponse)
+async def chat_with_public_bot(bot_id: str, message: ChatMessage, request: Request):
+    """
+    Public chat endpoint - no authentication required
+    For website widgets and public links
+    """
+    try:
+        logger.info(f"🔍 Public chat request for bot: {bot_id}")
+        
+        # Find chatbot config and initialize RAG system
+        all_configs = firestore_storage.db.collection(
+            firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
+        ).where('id', '==', bot_id).limit(1).stream()
+        
+        config_doc = None
+        for doc in all_configs:
+            config_doc = doc
+            break
+        
+        if not config_doc:
+            raise HTTPException(status_code=404, detail="Bot not found or inactive")
+        
+        config_data = config_doc.to_dict()
+        owner_user_id = config_data['user_id']
+        
+        # Initialize RAG system
+        rag_system = CloudMultiSourceRAG(bot_id, use_cloud_storage=True)
+        
+        # Generate conversation ID if not provided
+        conversation_id = message.conversation_id or str(uuid.uuid4())
+        
+        # Get client IP for analytics
+        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        
+        # Generate response using RAG system
+        response_text, sources = rag_system.query(message.message)
+        
+        # Create response
+        response = ChatResponse(
+            chatbot_id=bot_id,
+            response=response_text,
+            conversation_id=conversation_id,
+            timestamp=datetime.now(),
+            sources=sources or []
+        )
+        
+        logger.info(f"✅ Public chat response generated for bot: {bot_id}")
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Public chat error for {bot_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 # ─── Development Server ──────────────────────────────────────────────────────
 
 if __name__ == "__main__":
