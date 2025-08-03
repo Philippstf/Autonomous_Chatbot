@@ -196,7 +196,7 @@ export const sendPublicChatMessage = async (publicId, message, conversationId = 
       },
     });
 
-    const response = await publicApi.post(`/public/chat/${publicId}`, {
+    const response = await publicApi.post(`/v1/public/bot/${publicId}/chat`, {
       message,
       conversation_id: conversationId,
     });
@@ -217,7 +217,7 @@ export const getPublicChatbotInfo = async (publicId) => {
       },
     });
 
-    const response = await publicApi.get(`/public/chatbot/${publicId}`);
+    const response = await publicApi.get(`/v1/public/bot/${publicId}`);
     return response.data;
   } catch (error) {
     throw new Error(`Failed to get public chatbot info: ${error.response?.data?.detail || error.message}`);
