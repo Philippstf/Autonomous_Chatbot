@@ -1243,6 +1243,8 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         registry_doc = None
         for doc in registry_docs:
             registry_doc = doc
+            registry_data = doc.to_dict()
+            logger.info(f"📋 Registry doc found: doc_id={doc.id}, data={registry_data}")
             break
         
         if not registry_doc:
@@ -1250,7 +1252,9 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         
         # Get the actual bot_id from registry
         bot_id = registry_doc.id
+        registry_data = registry_doc.to_dict()
         logger.info(f"🔄 Resolved public_id {public_id} to bot_id: {bot_id}")
+        logger.info(f"📊 Registry data: {registry_data}")
         
         # Use the same approach as private chat - initialize RAG system directly
         logger.info(f"🔍 Initializing RAG system for bot_id: {bot_id}")
