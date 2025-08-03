@@ -244,7 +244,14 @@ function PublicChatbotPage() {
                   borderBottomRightRadius: message.role === 'user' ? 0 : 2,
                 }}
               >
-                <Typography variant="body2">
+                <Typography 
+                  variant="body2"
+                  sx={{ 
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    lineHeight: 1.6,
+                  }}
+                >
                   {message.content}
                 </Typography>
                 <Typography 
