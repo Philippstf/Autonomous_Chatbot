@@ -684,7 +684,7 @@ async def chat_with_bot(chatbot_id: str, message: ChatMessage):
                 )
                 
                 response = router_client.chat.completions.create(
-                    model="tngtech/deepseek-r1t2-chimera:free",
+                    model="mistralai/mistral-small-3.2-24b-instruct:free",
                     messages=messages,
                     temperature=0.2,
                     max_tokens=512
@@ -1452,7 +1452,7 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
                 )
                 
                 response = router_client.chat.completions.create(
-                    model="tngtech/deepseek-r1t2-chimera:free",
+                    model="mistralai/mistral-small-3.2-24b-instruct:free",
                     messages=messages,
                     temperature=0.2,
                     max_tokens=512
