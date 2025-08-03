@@ -1299,16 +1299,19 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         # Get client IP for analytics
         client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
         
-        # Generate response using RAG system
-        response_text, sources = rag_system.query(message.message)
+        # Generate response using RAG system (same method as private chat)
+        response_data = rag_system.get_response(
+            query=message.message,
+            conversation_id=conversation_id
+        )
         
         # Create response
         response = ChatResponse(
             chatbot_id=public_id,  # Return public_id for frontend consistency
-            response=response_text,
+            response=response_data.get('response', 'Keine Antwort erhalten.'),
             conversation_id=conversation_id,
             timestamp=datetime.now(),
-            sources=sources or []
+            sources=response_data.get('sources', [])
         )
         
         logger.info(f"✅ Public chat response generated for public_id: {public_id} (bot_id: {bot_id})")
