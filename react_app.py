@@ -1169,16 +1169,33 @@ async def serve_chatbot_page(chatbot_id: str):
 
 # ─── Public Chatbot Endpoints ─────────────────────────────────────────────────
 
-@app.get("/api/v1/public/bot/{bot_id}")
-async def get_public_bot_info(bot_id: str):
+@app.get("/api/v1/public/bot/{public_id}")
+async def get_public_bot_info(public_id: str):
     """
     Get public bot information for widget initialization and chat interface
     No authentication required
     """
     try:
-        logger.info(f"🔍 Public bot info request for bot: {bot_id}")
+        logger.info(f"🔍 Public bot info request for public_id: {public_id}")
         
-        # Find chatbot config
+        # First, resolve public_id to actual bot_id
+        registry_docs = firestore_storage.db.collection(
+            firestore_storage.COLLECTIONS['CHATBOT_REGISTRY']
+        ).where('publicId', '==', public_id).limit(1).stream()
+        
+        registry_doc = None
+        for doc in registry_docs:
+            registry_doc = doc
+            break
+        
+        if not registry_doc:
+            raise HTTPException(status_code=404, detail="Public bot not found")
+        
+        # Get the actual bot_id from registry
+        bot_id = registry_doc.id
+        logger.info(f"🔄 Resolved public_id {public_id} to bot_id: {bot_id}")
+        
+        # Find chatbot config using actual bot_id
         all_configs = firestore_storage.db.collection(
             firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
         ).where('id', '==', bot_id).limit(1).stream()
@@ -1189,13 +1206,13 @@ async def get_public_bot_info(bot_id: str):
             break
         
         if not config_doc:
-            raise HTTPException(status_code=404, detail="Bot not found or inactive")
+            raise HTTPException(status_code=404, detail="Bot config not found or inactive")
         
         config_data = config_doc.to_dict()
         
         # Return public bot information
         return {
-            "bot_id": bot_id,
+            "bot_id": public_id,  # Return public_id for frontend consistency
             "name": config_data.get('name', 'Chatbot'),
             "description": config_data.get('description', ''),
             "available": True,
@@ -1206,17 +1223,34 @@ async def get_public_bot_info(bot_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting public bot info {bot_id}: {e}")
+        logger.error(f"Error getting public bot info {public_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/api/v1/public/bot/{bot_id}/chat", response_model=ChatResponse)
-async def chat_with_public_bot(bot_id: str, message: ChatMessage, request: Request):
+@app.post("/api/v1/public/bot/{public_id}/chat", response_model=ChatResponse)
+async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Request):
     """
     Public chat endpoint - no authentication required
     For website widgets and public links
     """
     try:
-        logger.info(f"🔍 Public chat request for bot: {bot_id}")
+        logger.info(f"🔍 Public chat request for public_id: {public_id}")
+        
+        # First, resolve public_id to actual bot_id
+        registry_docs = firestore_storage.db.collection(
+            firestore_storage.COLLECTIONS['CHATBOT_REGISTRY']
+        ).where('publicId', '==', public_id).limit(1).stream()
+        
+        registry_doc = None
+        for doc in registry_docs:
+            registry_doc = doc
+            break
+        
+        if not registry_doc:
+            raise HTTPException(status_code=404, detail="Public bot not found")
+        
+        # Get the actual bot_id from registry
+        bot_id = registry_doc.id
+        logger.info(f"🔄 Resolved public_id {public_id} to bot_id: {bot_id}")
         
         # Find chatbot config and initialize RAG system
         all_configs = firestore_storage.db.collection(
@@ -1229,12 +1263,12 @@ async def chat_with_public_bot(bot_id: str, message: ChatMessage, request: Reque
             break
         
         if not config_doc:
-            raise HTTPException(status_code=404, detail="Bot not found or inactive")
+            raise HTTPException(status_code=404, detail="Bot config not found or inactive")
         
         config_data = config_doc.to_dict()
         owner_user_id = config_data['user_id']
         
-        # Initialize RAG system
+        # Initialize RAG system with actual bot_id
         rag_system = CloudMultiSourceRAG(bot_id, use_cloud_storage=True)
         
         # Generate conversation ID if not provided
@@ -1248,20 +1282,20 @@ async def chat_with_public_bot(bot_id: str, message: ChatMessage, request: Reque
         
         # Create response
         response = ChatResponse(
-            chatbot_id=bot_id,
+            chatbot_id=public_id,  # Return public_id for frontend consistency
             response=response_text,
             conversation_id=conversation_id,
             timestamp=datetime.now(),
             sources=sources or []
         )
         
-        logger.info(f"✅ Public chat response generated for bot: {bot_id}")
+        logger.info(f"✅ Public chat response generated for public_id: {public_id} (bot_id: {bot_id})")
         return response
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Public chat error for {bot_id}: {e}")
+        logger.error(f"Public chat error for {public_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # ─── Development Server ──────────────────────────────────────────────────────
