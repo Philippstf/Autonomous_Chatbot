@@ -27,6 +27,8 @@ class ChatbotConfig:
     created_at: str = None
     branding: Optional[Dict] = None
     extended_config: Optional[Dict] = None
+    public_id: Optional[str] = None  # Neue Feld für öffentliche Links
+    api_keys: Optional[List[str]] = None  # API-Keys für WP-Plugin
     
     def __post_init__(self):
         if self.created_at is None:
@@ -42,6 +44,8 @@ class ChatbotConfig:
             }
         if self.extended_config is None:
             self.extended_config = {}
+        if self.api_keys is None:
+            self.api_keys = []
 
 class ChatbotFactory:
     """Factory für die Erstellung und Verwaltung von Chatbots"""
@@ -332,6 +336,76 @@ class ChatbotFactory:
         # In Production würde hier die echte Domain stehen
         base_url = "http://localhost:8501"  # Streamlit default
         return f"{base_url}/chatbot?id={chatbot_id}"
+    
+    def generate_public_id(self, chatbot_id: str) -> Optional[str]:
+        """Generiert eine eindeutige public_id für öffentliche Links"""
+        try:
+            config = self.load_chatbot_config(chatbot_id)
+            if not config:
+                return None
+            
+            # Generiere eindeutige public_id falls noch nicht vorhanden
+            if not config.public_id:
+                config.public_id = str(uuid.uuid4())[:8]  # Kurze, URL-freundliche ID
+                self._save_chatbot_config(config)
+            
+            return config.public_id
+            
+        except Exception as e:
+            print(f"Fehler beim Generieren der public_id: {e}")
+            return None
+    
+    def get_chatbot_by_public_id(self, public_id: str) -> Optional[ChatbotConfig]:
+        """Lädt Chatbot-Konfiguration über public_id"""
+        try:
+            # Durchsuche alle Chatbots nach public_id
+            for chatbot_id in self.registry["chatbots"].keys():
+                config = self.load_chatbot_config(chatbot_id)
+                if config and config.public_id == public_id:
+                    return config
+            return None
+            
+        except Exception as e:
+            print(f"Fehler beim Laden des Chatbots über public_id: {e}")
+            return None
+    
+    def generate_api_key(self, chatbot_id: str) -> Optional[str]:
+        """Generiert einen neuen API-Key für WP-Plugin Integration"""
+        try:
+            config = self.load_chatbot_config(chatbot_id)
+            if not config:
+                return None
+            
+            # Generiere neuen API-Key
+            api_key = f"hlfr_{str(uuid.uuid4()).replace('-', '')[:24]}"
+            
+            # Füge zu API-Keys hinzu
+            if not config.api_keys:
+                config.api_keys = []
+            config.api_keys.append(api_key)
+            
+            # Speichere Konfiguration
+            self._save_chatbot_config(config)
+            
+            return api_key
+            
+        except Exception as e:
+            print(f"Fehler beim Generieren des API-Keys: {e}")
+            return None
+    
+    def validate_api_key(self, api_key: str) -> Optional[str]:
+        """Validiert API-Key und gibt chatbot_id zurück"""
+        try:
+            # Durchsuche alle Chatbots nach API-Key
+            for chatbot_id in self.registry["chatbots"].keys():
+                config = self.load_chatbot_config(chatbot_id)
+                if config and config.api_keys and api_key in config.api_keys:
+                    return chatbot_id
+            return None
+            
+        except Exception as e:
+            print(f"Fehler beim Validieren des API-Keys: {e}")
+            return None
 
 # Globale Factory-Instanz
 chatbot_factory = ChatbotFactory()

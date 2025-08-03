@@ -1671,6 +1671,12 @@ def main():
     
     initialize_session_state()
     
+    # Prüfe URL Parameter für öffentliche Chatbot-Links
+    query_params = st.experimental_get_query_params()
+    if "public_id" in query_params:
+        show_public_chatbot(query_params["public_id"][0])
+        return
+    
     # Platform Header
     st.markdown(f"""
     <div class="platform-header">
@@ -1777,6 +1783,11 @@ def show_chatbot_list():
                     st.session_state.selected_chatbot_id = config.id
                     st.switch_page("pages/chatbot.py")
                 
+                if st.button("🔗 Teilen", key=f"share_{config.id}"):
+                    st.session_state.selected_chatbot_for_sharing = config.id
+                    st.session_state.show_sharing_modal = True
+                    st.rerun()
+                
                 if st.button("🗑️", key=f"delete_{config.id}", help="Chatbot löschen"):
                     if chatbot_factory.delete_chatbot(config.id):
                         st.success("✅ Chatbot gelöscht!")
@@ -1785,6 +1796,10 @@ def show_chatbot_list():
                         st.error("❌ Fehler beim Löschen!")
             
             st.markdown("---")
+    
+    # Teilen-Modal anzeigen falls aktiviert
+    if st.session_state.get('show_sharing_modal', False):
+        show_sharing_modal()
 
 def show_chatbot_creation_process():
     """Zeigt den echten Chatbot-Erstellungsprozess"""
@@ -1910,6 +1925,185 @@ def show_chatbot_creation_process():
         if st.button("🔄 Zurück zur Konfiguration"):
             st.session_state.chatbot_creation_in_progress = False
             st.rerun()
+
+def show_sharing_modal():
+    """Zeigt das Teilen-Modal mit den verschiedenen Sharing-Optionen"""
+    
+    chatbot_id = st.session_state.get('selected_chatbot_for_sharing')
+    if not chatbot_id:
+        return
+    
+    config = chatbot_factory.load_chatbot_config(chatbot_id)
+    if not config:
+        st.error("Chatbot nicht gefunden!")
+        return
+    
+    # Modal Header
+    st.markdown(f"## 🔗 {config.name} teilen")
+    
+    # Tabs für verschiedene Sharing-Optionen
+    tab1, tab2, tab3 = st.tabs(["🌐 Öffentlicher Link", "📎 Website Widget", "🔑 API-Key"])
+    
+    with tab1:
+        st.markdown("### 🌐 Öffentlicher Link")
+        st.write("Teilen Sie Ihren Chatbot über einen direkten Link:")
+        
+        # Generiere Public ID falls noch nicht vorhanden
+        public_id = chatbot_factory.generate_public_id(chatbot_id)
+        if public_id:
+            base_url = "http://localhost:8501"  # In Production: echte Domain
+            public_url = f"{base_url}?public_id={public_id}"
+            
+            st.code(public_url, language=None)
+            st.write("📋 Teilen Sie diesen Link mit Ihren Kunden für direkten Zugang zum Chatbot.")
+        else:
+            st.error("Fehler beim Generieren des öffentlichen Links.")
+    
+    with tab2:
+        st.markdown("### 📎 Website Widget")
+        st.write("Betten Sie den Chatbot in Ihre Website ein:")
+        
+        public_id = config.public_id or chatbot_factory.generate_public_id(chatbot_id)
+        if public_id:
+            base_url = "http://localhost:8501"
+            iframe_code = f'''<iframe 
+    src="{base_url}?public_id={public_id}&embed=true" 
+    width="400" 
+    height="600" 
+    frameborder="0"
+    title="{config.name} Chatbot">
+</iframe>'''
+            
+            st.code(iframe_code, language="html")
+            st.write("📋 Kopieren Sie diesen Code und fügen Sie ihn in Ihre Website ein.")
+    
+    with tab3:
+        st.markdown("### 🔑 API-Key")
+        st.write("Generieren Sie einen API-Key für WordPress Plugin oder andere Integrationen:")
+        
+        if st.button("🔑 Neuen API-Key generieren"):
+            api_key = chatbot_factory.generate_api_key(chatbot_id)
+            if api_key:
+                st.code(api_key, language=None)
+                st.success("✅ API-Key erfolgreich generiert!")
+                st.write("📋 Verwenden Sie diesen Key für WordPress Plugin oder andere Integrationen.")
+            else:
+                st.error("Fehler beim Generieren des API-Keys.")
+        
+        # Zeige bestehende API-Keys
+        if config.api_keys:
+            st.markdown("#### Bestehende API-Keys:")
+            for i, key in enumerate(config.api_keys):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.code(key, language=None)
+                with col2:
+                    if st.button("🗑️", key=f"delete_api_key_{i}"):
+                        config.api_keys.remove(key)
+                        chatbot_factory._save_chatbot_config(config)
+                        st.rerun()
+    
+    # Modal schließen
+    if st.button("✖️ Schließen"):
+        st.session_state.show_sharing_modal = False
+        st.session_state.selected_chatbot_for_sharing = None
+        st.rerun()
+
+def show_public_chatbot(public_id: str):
+    """Zeigt öffentlichen Chatbot ohne Authentifizierung"""
+    
+    # Lade Chatbot-Konfiguration über public_id
+    config = chatbot_factory.get_chatbot_by_public_id(public_id)
+    if not config:
+        st.error("🤖 Chatbot nicht gefunden!")
+        st.write("Der angeforderte Chatbot ist nicht verfügbar oder wurde entfernt.")
+        return
+    
+    # Prüfe ob es ein Embed-Request ist
+    query_params = st.experimental_get_query_params()
+    is_embed = "embed" in query_params and query_params["embed"][0] == "true"
+    
+    if is_embed:
+        # Minimales Styling für Embed
+        st.markdown("""
+        <style>
+        [data-testid="stAppViewContainer"] {
+            padding: 0;
+        }
+        [data-testid="stHeader"] {
+            display: none;
+        }
+        .main {
+            padding: 10px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    else:
+        # Vollständiges Styling für Standalone-Seite
+        st.set_page_config(
+            page_title=f"{config.name} - Chatbot",
+            page_icon="🤖",
+            layout="centered"
+        )
+    
+    # Public Chatbot Interface
+    st.markdown(f"# 🤖 {config.name}")
+    if not is_embed:
+        st.write(config.description)
+        st.markdown("---")
+    
+    # Session State für Public Chat
+    if f"public_messages_{public_id}" not in st.session_state:
+        st.session_state[f"public_messages_{public_id}"] = [
+            {
+                "role": "assistant",
+                "content": config.branding.get("welcome_message", f"Hallo! Ich bin {config.name}. Wie kann ich Ihnen helfen?"),
+                "sources": []
+            }
+        ]
+    
+    # Chat Interface laden
+    from pages.chatbot import ask_chatbot, display_chat_message_with_sources
+    
+    # Chat History anzeigen
+    for msg in st.session_state[f"public_messages_{public_id}"]:
+        display_chat_message_with_sources(
+            msg["role"], 
+            msg["content"], 
+            msg.get("sources", []), 
+            config
+        )
+    
+    # Chat Input
+    if user_input := st.chat_input(f"Nachricht an {config.name}..."):
+        # User-Nachricht hinzufügen
+        st.session_state[f"public_messages_{public_id}"].append({
+            "role": "user", 
+            "content": user_input,
+            "sources": []
+        })
+        display_chat_message_with_sources("user", user_input, config=config)
+        
+        # Bot-Antwort generieren
+        with st.spinner("Antwort wird generiert..."):
+            try:
+                answer, sources = ask_chatbot(config.id, user_input)
+                
+                st.session_state[f"public_messages_{public_id}"].append({
+                    "role": "assistant", 
+                    "content": answer,
+                    "sources": sources
+                })
+                display_chat_message_with_sources("assistant", answer, sources, config)
+                
+            except Exception as e:
+                error_msg = f"Entschuldigung, ein Fehler ist aufgetreten: {e}"
+                st.error(error_msg)
+                st.session_state[f"public_messages_{public_id}"].append({
+                    "role": "assistant", 
+                    "content": error_msg,
+                    "sources": []
+                })
 
 if __name__ == "__main__":
     main()
