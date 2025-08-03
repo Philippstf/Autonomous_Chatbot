@@ -1253,17 +1253,32 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         logger.info(f"🔄 Resolved public_id {public_id} to bot_id: {bot_id}")
         
         # Find chatbot config and initialize RAG system
+        logger.info(f"🔍 Looking for chatbot config with id: {bot_id}")
         all_configs = firestore_storage.db.collection(
             firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
         ).where('id', '==', bot_id).limit(1).stream()
         
         config_doc = None
+        config_count = 0
         for doc in all_configs:
             config_doc = doc
+            config_count += 1
+            logger.info(f"📋 Found config doc with id: {doc.id}, data: {doc.to_dict().get('id', 'NO_ID')}")
             break
         
+        logger.info(f"📊 Total configs found: {config_count}")
+        
         if not config_doc:
-            raise HTTPException(status_code=404, detail="Bot config not found or inactive")
+            # Let's try to find ANY config and see what IDs exist
+            logger.info(f"🔍 No config found for {bot_id}, checking all configs...")
+            all_configs_debug = firestore_storage.db.collection(
+                firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
+            ).limit(5).stream()
+            
+            for doc in all_configs_debug:
+                logger.info(f"📋 Available config: doc_id={doc.id}, id_field={doc.to_dict().get('id', 'NO_ID')}")
+            
+            raise HTTPException(status_code=404, detail=f"Bot config not found for id: {bot_id}")
         
         config_data = config_doc.to_dict()
         owner_user_id = config_data['user_id']
