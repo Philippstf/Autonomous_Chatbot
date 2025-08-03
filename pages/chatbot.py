@@ -242,23 +242,41 @@ def _render_sources(sources: List[Dict]) -> str:
 def build_system_prompt_for_chatbot(config: ChatbotConfig, context: List[Dict], user_question: str, chat_history: List[Dict] = None) -> List[Dict]:
     """Baut System-Prompt für spezifischen Chatbot"""
     
-    system_prompt = f"""Du bist {config.name}, ein freundlicher und hilfreicher KI-Assistent.
+    # Lade erweiterte Konfiguration für Kontaktpersonen
+    extended_config = load_extended_config(config)
+    contact_persons = extended_config.get('contact_persons', [])
+    
+    system_prompt = f"""Du bist {config.name}, ein professioneller KI-Kundenberater.
 
-Deine Aufgabe:
-• Beantworte Fragen basierend auf den bereitgestellten Informationen
-• Antworte stets präzise, empathisch und serviceorientiert
-• Gib klare, knapp formulierte Antworten in Deutsch
-• Wenn Details fehlen, bitte proaktiv um genauere Angaben
-• Bewahre stets einen professionellen, aber sympathischen Ton
-• Berücksichtige den Gesprächsverlauf und beziehe dich auf vorherige Nachrichten wenn relevant
+WICHTIGE VERHALTENSREGELN:
+• Antworte SOFORT und DIREKT auf die Frage - keine internen Gedankenprozesse!
+• Verwende AUSSCHLIESSLICH die bereitgestellten Informationen
+• Antworte in höflichem, professionellem Deutsch
+• Gib konkrete, hilfreiche Antworten ohne Wiederholungen
+• Bei Tests oder "test"-Eingaben: Bestätige kurz deine Funktionsfähigkeit
 
-Über dich:
+DEINE ROLLE:
 • Name: {config.name}
 • Beschreibung: {config.description}
-• Begrüßung: {config.branding.get('welcome_message', f'Hallo! Ich bin {config.name}.')}
+• Mission: Exzellenter Kundenservice und kompetente Beratung
 
-Nutze nur die folgenden kontextuellen Informationen. 
-Wenn Du die Antwort nicht findest, entschuldige Dich kurz und erkläre deine Grenzen."""
+WAS DU TUN SOLLST:
+✅ Direkt auf Fragen antworten ohne Umwege
+✅ Konkrete Informationen aus dem Kontext verwenden
+✅ Bei fehlenden Infos: Alternative Hilfe anbieten
+✅ Freundlich und serviceorientiert bleiben
+✅ Kurze, präzise Antworten geben
+
+WAS DU NICHT TUN DARFST:
+❌ Interne Denkprozesse zeigen ("Ich muss...", "Basierend auf...")
+❌ Informationen erfinden oder spekulieren
+❌ Lange Erklärungen über deine Grenzen
+❌ Antworten verweigern ohne Alternative zu bieten
+
+BEI FEHLENDEN INFORMATIONEN:
+Sage höflich: "Diese spezifische Information habe ich nicht verfügbar. Gerne kann ich Ihnen jedoch bei [verwandte Themen] helfen, oder Sie kontaktieren uns direkt für detaillierte Beratung."
+
+ANTWORTE IMMER DIREKT UND PROFESSIONELL!"""
 
     ctx_text = "\n\n---\n\n".join(c["text"] for c in context)
     
@@ -325,17 +343,29 @@ def ask_chatbot(chatbot_id: str, question: str, conversation_id: str = None) -> 
         relevant_chunks = rag_system.retrieve_chunks(question, top_k=5)
         
         if not relevant_chunks:
-            return f"Entschuldigung, ich konnte keine relevanten Informationen zu Ihrer Frage finden. Können Sie Ihre Frage anders formulieren?", []
+            # Bessere Fallback-Strategie
+            fallback_msg = f"Diese spezifische Information habe ich nicht verfügbar. "
+            
+            # Kontaktpersonen aus Config laden falls vorhanden
+            extended_config = load_extended_config(config)
+            contact_persons = extended_config.get('contact_persons', [])
+            
+            if contact_persons:
+                fallback_msg += f"Gerne können Sie sich direkt an unsere Fachberater wenden oder "
+            
+            fallback_msg += "versuchen Sie eine andere Formulierung Ihrer Frage. Ich helfe gerne weiter!"
+            
+            return fallback_msg, []
         
         # Build messages für LLM
         messages = build_system_prompt_for_chatbot(config, relevant_chunks, question, chat_history)
         
-        # LLM-Call
+        # LLM-Call mit optimierten Parametern
         response = router_client.chat.completions.create(
             model=LLM_MODEL,
             messages=messages,
-            temperature=0.2,
-            max_tokens=512,
+            temperature=0.1,  # Niedrigere Temperature für konsistentere Antworten
+            max_tokens=800,   # Mehr Tokens für vollständige Antworten
         )
         
         answer = response.choices[0].message.content.strip()
