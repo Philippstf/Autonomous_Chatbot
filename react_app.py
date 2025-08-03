@@ -1264,10 +1264,34 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         logger.info(f"📋 Used railwayBotId: {registry_data.get('railwayBotId')}")
         logger.info(f"📋 Registry doc_id was: {registry_doc.id}")
         
-        # Use the same approach as private chat - initialize RAG system directly
-        logger.info(f"🔍 Initializing RAG system for bot_id: {bot_id}")
+        # Get chatbot config from Firestore (same as private chat)
+        all_configs = firestore_storage.db.collection(
+            firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
+        ).where('id', '==', bot_id).stream()
+        
+        config_doc = None
+        for doc in all_configs:
+            config_doc = doc
+            break
+        
+        if not config_doc:
+            raise HTTPException(status_code=404, detail=f"Chatbot config not found for bot ID: {bot_id}")
+        
+        config_data = config_doc.to_dict()
+        
+        # Create chatbot_config object (same as private chat)
+        from utils.chatbot_factory import ChatbotConfig
+        chatbot_config = ChatbotConfig(
+            id=bot_id,
+            name=config_data.get('name', ''),
+            description=config_data.get('description', ''),
+            branding=config_data.get('branding', {}),
+            website_url=config_data.get('website_url'),
+            extended_config=config_data.get('extended_config', {})
+        )
         
         # Initialize RAG system with actual bot_id (same as private chat)
+        logger.info(f"🔍 Initializing RAG system for bot_id: {bot_id}")
         rag_system = CloudMultiSourceRAG(chatbot_id=bot_id, use_cloud_storage=True)
         
         # Try to load RAG system (same logic as private chat)
@@ -1276,21 +1300,6 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
             logger.info(f"✅ Successfully loaded RAG system for bot {bot_id}")
         except Exception as load_error:
             logger.warning(f"⚠️ RAG system not found for {bot_id}, trying on-demand initialization... Error: {load_error}")
-            
-            # Check if we have chatbot config in Firestore (same as private chat)
-            all_configs = firestore_storage.db.collection(
-                firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
-            ).where('id', '==', bot_id).stream()
-            
-            config_doc = None
-            for doc in all_configs:
-                config_doc = doc
-                break
-            
-            if not config_doc:
-                raise HTTPException(status_code=404, detail=f"Chatbot not found and on-demand initialization failed. Bot ID: {bot_id}")
-            
-            # On-demand initialization would go here if needed
             raise HTTPException(status_code=404, detail=f"Chatbot not found and on-demand initialization failed. Bot ID: {bot_id}")
         
         # Generate conversation ID if not provided
