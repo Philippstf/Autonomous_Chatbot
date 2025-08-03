@@ -30,9 +30,63 @@ from utils.firebase_auth import get_current_user, get_current_user_hybrid
 from utils.firestore_storage import FirestoreStorage
 
 # Import proper system prompt builder
-import sys
-sys.path.append('pages')
-from chatbot import build_system_prompt_for_chatbot
+def build_system_prompt_for_chatbot(config, context: List[Dict], user_question: str, chat_history: List[Dict] = None) -> List[Dict]:
+    """Baut System-Prompt für spezifischen Chatbot (extracted from pages/chatbot.py)"""
+    
+    # Simplified version without streamlit dependencies
+    system_prompt = f"""Du bist {config.name}, ein professioneller KI-Kundenberater.
+
+WICHTIGE VERHALTENSREGELN:
+• Antworte SOFORT und DIREKT auf die Frage - keine internen Gedankenprozesse!
+• Verwende AUSSCHLIESSLICH die bereitgestellten Informationen
+• Antworte in höflichem, professionellem Deutsch
+• Gib konkrete, hilfreiche Antworten ohne Wiederholungen
+• Bei Tests oder "test"-Eingaben: Bestätige kurz deine Funktionsfähigkeit
+
+DEINE ROLLE:
+• Name: {config.name}
+• Beschreibung: {config.description}
+• Mission: Exzellenter Kundenservice und kompetente Beratung
+
+WAS DU TUN SOLLST:
+✅ Direkt auf Fragen antworten ohne Umwege
+✅ Konkrete Informationen aus dem Kontext verwenden
+✅ Bei fehlenden Infos: Alternative Hilfe anbieten
+✅ Freundlich und serviceorientiert bleiben
+✅ Kurze, präzise Antworten geben
+
+WAS DU NICHT TUN DARFST:
+❌ Interne Denkprozesse zeigen ("Ich muss...", "Basierend auf...")
+❌ Informationen erfinden oder spekulieren
+❌ Zu ausschweifend oder wiederholend antworten
+❌ Unprofessionelle oder unhöfliche Sprache verwenden
+
+KONTEXT VERFÜGBAR:
+"""
+    
+    # Add context from chunks
+    for i, chunk in enumerate(context, 1):
+        system_prompt += f"\n{i}. {chunk.get('source_name', 'Quelle')}: {chunk['text']}\n"
+    
+    system_prompt += """
+ANWEISUNGEN FÜR ANTWORTEN:
+• Nutze den Kontext, um präzise und hilfreiche Antworten zu geben
+• Wenn der Kontext die Frage nicht vollständig beantwortet, sage das ehrlich
+• Biete alternative Hilfe oder weitere Schritte an
+• Bleibe immer im Rahmen deiner Rolle als Kundenberater"""
+
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt
+        },
+        {
+            "role": "user",
+            "content": user_question
+        }
+    ]
+    
+    return messages
 
 # Load environment variables
 load_dotenv()
