@@ -22,7 +22,7 @@ import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { chatbotRegistryService } from '../services/firebaseService';
+import { createChatbot } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 // Import step components
@@ -265,20 +265,33 @@ function CreateChatbotPage() {
     setError(null);
 
     try {
+      // Prepare chatbot data for the backend API
       const chatbotData = {
-        ...formData,
-        user_id: user.uid,
-        created_at: new Date(),
-        status: 'active',
+        name: formData.name,
+        description: formData.description || '',
+        branding: formData.branding || {},
+        company_info: formData.company_info || {},
+        features: formData.features || {},
+        contact_persons: formData.contact_persons || [],
+        // Extract data sources
+        website_url: formData.data_sources?.urls?.[0] || '',
+        manual_text: formData.data_sources?.text_inputs?.[0] || '',
+        tags: formData.tags || []
       };
 
-      await chatbotRegistryService.createChatbot(chatbotData);
-      navigate('/chatbots', { 
-        state: { message: 'Neural Assistant successfully created!' }
+      // Get uploaded files if any
+      const files = formData.data_sources?.files || [];
+
+      // Call the backend API that handles the full chatbot creation pipeline
+      const result = await createChatbot(chatbotData, files);
+      
+      // Navigate to the created chatbot, not to the list
+      navigate(`/chatbot/${result.chatbot_id}`, { 
+        state: { message: 'Chatbot erfolgreich erstellt!' }
       });
     } catch (error) {
       console.error('Chatbot creation failed:', error);
-      setError('Failed to create neural assistant. Please try again.');
+      setError(`Fehler beim Erstellen des Chatbots: ${error.message}`);
     } finally {
       setIsCreating(false);
     }
