@@ -1250,11 +1250,19 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         if not registry_doc:
             raise HTTPException(status_code=404, detail="Public bot not found")
         
-        # Get the actual bot_id from registry
-        bot_id = registry_doc.id
+        # Get the actual bot_id from registry data (not doc ID!)
         registry_data = registry_doc.to_dict()
+        
+        # Try different sources for the bot_id in order of preference
+        bot_id = (
+            registry_data.get('railwayBotId') or 
+            registry_data.get('config', {}).get('id') or 
+            registry_doc.id  # fallback to doc ID
+        )
+        
         logger.info(f"🔄 Resolved public_id {public_id} to bot_id: {bot_id}")
-        logger.info(f"📊 Registry data: {registry_data}")
+        logger.info(f"📋 Used railwayBotId: {registry_data.get('railwayBotId')}")
+        logger.info(f"📋 Registry doc_id was: {registry_doc.id}")
         
         # Use the same approach as private chat - initialize RAG system directly
         logger.info(f"🔍 Initializing RAG system for bot_id: {bot_id}")
