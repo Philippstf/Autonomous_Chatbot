@@ -26,7 +26,7 @@ load_dotenv()
 # ─── LLM Configuration ──────────────────────────────────────────────────────────
 ROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 ROUTER_API_BASE = "https://openrouter.ai/api/v1"
-LLM_MODEL = "meta-llama/llama-3.2-3b-instruct:free"
+LLM_MODEL = "tngtech/deepseek-r1t2-chimera:free"
 
 router_client = OpenAI(
     api_key=ROUTER_API_KEY,

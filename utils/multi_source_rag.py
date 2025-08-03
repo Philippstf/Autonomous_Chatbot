@@ -426,7 +426,7 @@ Anweisungen:
             ]
             
             response = router_client.chat.completions.create(
-                model="meta-llama/llama-3.2-3b-instruct:free",
+                model="tngtech/deepseek-r1t2-chimera:free",
                 messages=messages,
                 temperature=0.2,
                 max_tokens=512
