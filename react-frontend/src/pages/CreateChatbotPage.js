@@ -29,13 +29,13 @@ import PreviewStep from '../components/wizard/PreviewStep';
 import BotCreationDisclaimerModal from '../components/BotCreationDisclaimerModal';
 
 const wizardSteps = [
-  { id: 'basic', label: 'Basic Settings', icon: '📋' },
-  { id: 'branding', label: 'Design & Branding', icon: '🎨' },
-  { id: 'company', label: 'Company Info', icon: '🏢' },
-  { id: 'features', label: 'Features', icon: '⚡' },
-  { id: 'contacts', label: 'Contact Persons', icon: '👥' },
-  { id: 'data', label: 'Data Sources', icon: '📊' },
-  { id: 'preview', label: 'Preview & Deploy', icon: '🚀' },
+  { id: 'basic', label: 'Grundeinstellungen' },
+  { id: 'branding', label: 'Design & Branding' },
+  { id: 'company', label: 'Firmeninformationen' },
+  { id: 'features', label: 'Funktionen' },
+  { id: 'contacts', label: 'Ansprechpartner' },
+  { id: 'data', label: 'Datenquellen' },
+  { id: 'preview', label: 'Vorschau & Bereitstellung' },
 ];
 
 const initialFormData = {
@@ -451,21 +451,15 @@ function CreateChatbotPage() {
                 <StepLabel
                   sx={{
                     '& .MuiStepLabel-label': {
-                      fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                      fontSize: { xs: '0.75rem', sm: '0.8rem' },
                       fontWeight: activeStep === index ? 600 : 400,
+                      textAlign: 'center',
+                      marginTop: '8px',
                       display: { xs: 'none', sm: 'block' },
                     },
                   }}
                 >
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: { xs: 0.5, sm: 1 },
-                    flexDirection: { xs: 'column', sm: 'row' }
-                  }}>
-                    <span style={{ fontSize: isMobile ? '1rem' : '1.2rem' }}>{step.icon}</span>
-                    <span style={{ display: isSmall ? 'none' : 'inline' }}>{step.label}</span>
-                  </Box>
+                  {step.label}
                 </StepLabel>
               </Step>
             ))}

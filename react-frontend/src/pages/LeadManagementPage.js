@@ -210,8 +210,9 @@ const LeadManagementPage = () => {
     >
       <Card sx={{ 
         height: '100%',
-        background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
-        border: '1px solid rgba(30, 58, 138, 0.1)'
+        background: `linear-gradient(135deg, ${color}08, ${color}15)`,
+        border: `1px solid ${color}20`,
+        borderLeft: `4px solid ${color}`
       }}>
         <CardContent sx={{ p: 3, textAlign: 'center' }}>
           <Box sx={{ 

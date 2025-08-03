@@ -138,11 +138,22 @@ function SharingModal({ open, onClose, chatbot }) {
         maxWidth="md" 
         fullWidth
         PaperProps={{
-          sx: { minHeight: '500px' }
+          sx: { 
+            minHeight: '500px',
+            background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+            border: '1px solid rgba(30, 58, 138, 0.1)'
+          }
         }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ShareIcon />
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1,
+          color: '#1e3a8a',
+          fontWeight: 600,
+          fontSize: '1.25rem'
+        }}>
+          <ShareIcon sx={{ color: '#1e3a8a' }} />
           {chatbot?.config?.name || chatbot?.name} teilen
         </DialogTitle>
 
@@ -151,7 +162,22 @@ function SharingModal({ open, onClose, chatbot }) {
             value={activeTab} 
             onChange={handleTabChange} 
             aria-label="sharing options"
-            sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider', 
+              mb: 2,
+              '& .MuiTab-root': {
+                color: '#6b7280',
+                fontWeight: 500,
+                '&.Mui-selected': {
+                  color: '#1e3a8a',
+                  fontWeight: 600,
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#1e3a8a',
+              },
+            }}
           >
             <Tab icon={<LinkIcon />} label="Öffentlicher Link" />
             <Tab icon={<CodeIcon />} label="Website Widget" />
@@ -161,7 +187,7 @@ function SharingModal({ open, onClose, chatbot }) {
           {/* Public Link Tab */}
           <TabPanel value={activeTab} index={0}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
                 🌐 Öffentlicher Link
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -203,6 +229,12 @@ function SharingModal({ open, onClose, chatbot }) {
                   onClick={generatePublicLink}
                   disabled={loading}
                   startIcon={loading ? <CircularProgress size={20} /> : <LinkIcon />}
+                  sx={{
+                    background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #1e40af, #2563eb)',
+                    },
+                  }}
                 >
                   {loading ? 'Generiere...' : 'Öffentlichen Link generieren'}
                 </Button>
@@ -213,7 +245,7 @@ function SharingModal({ open, onClose, chatbot }) {
           {/* Widget Tab */}
           <TabPanel value={activeTab} index={1}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
                 🎯 Dynamisches Chat Widget
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -310,6 +342,12 @@ function SharingModal({ open, onClose, chatbot }) {
                   onClick={generatePublicLink}
                   disabled={loading}
                   startIcon={loading ? <CircularProgress size={20} /> : <LinkIcon />}
+                  sx={{
+                    background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #1e40af, #2563eb)',
+                    },
+                  }}
                 >
                   {loading ? 'Generiere...' : 'Öffentlichen Link generieren'}
                 </Button>
@@ -320,7 +358,7 @@ function SharingModal({ open, onClose, chatbot }) {
           {/* API Key Tab */}
           <TabPanel value={activeTab} index={2}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#1e3a8a', fontWeight: 600 }}>
                 🔑 API-Key
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -335,6 +373,12 @@ function SharingModal({ open, onClose, chatbot }) {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : <KeyIcon />}
                 fullWidth
+                sx={{
+                  background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1e40af, #2563eb)',
+                  },
+                }}
               >
                 {loading ? 'Generiere...' : 'Neuen API-Key generieren'}
               </Button>

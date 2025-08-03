@@ -285,7 +285,7 @@ const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#374151' }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.secondary' }}>
             🤖 Letzte Chatbots
           </Typography>
           
@@ -320,7 +320,7 @@ const DashboardPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#374151' }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.secondary' }}>
           🚀 Schnellaktionen
         </Typography>
         
