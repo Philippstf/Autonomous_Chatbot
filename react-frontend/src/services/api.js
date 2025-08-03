@@ -183,6 +183,47 @@ export const getChatConfig = async (chatbotId) => {
   }
 };
 
+// ─── Public Chat Functions (No Auth Required) ────────────────────────────────
+
+export const sendPublicChatMessage = async (publicId, message, conversationId = null) => {
+  try {
+    // Create a temporary axios instance without auth interceptors for public calls
+    const publicApi = axios.create({
+      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const response = await publicApi.post(`/public/chat/${publicId}`, {
+      message,
+      conversation_id: conversationId,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to send public message: ${error.response?.data?.detail || error.message}`);
+  }
+};
+
+export const getPublicChatbotInfo = async (publicId) => {
+  try {
+    // Create a temporary axios instance without auth interceptors for public calls
+    const publicApi = axios.create({
+      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const response = await publicApi.get(`/public/chatbot/${publicId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to get public chatbot info: ${error.response?.data?.detail || error.message}`);
+  }
+};
+
 // ─── File Upload ─────────────────────────────────────────────────────────────
 
 export const uploadDocuments = async (files) => {

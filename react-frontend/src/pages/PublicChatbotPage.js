@@ -20,6 +20,7 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { chatbotRegistryService } from '../services/firebaseService';
+import { sendPublicChatMessage } from '../services/api';
 
 function PublicChatbotPage() {
   const { publicId } = useParams();
@@ -84,15 +85,15 @@ function PublicChatbotPage() {
     setSendingMessage(true);
 
     try {
-      // TODO: Replace with actual API call to your backend
-      // For now, simulate a response
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send message to backend API
+      const response = await sendPublicChatMessage(publicId, userMessage.content);
       
       const botResponse = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `Danke für Ihre Nachricht: "${userMessage.content}". Das ist eine simulierte Antwort. Bitte verbinden Sie diesen Public Chatbot mit Ihrem Backend API.`,
+        content: response.response || response.message || 'Keine Antwort erhalten.',
         timestamp: new Date(),
+        sources: response.sources || [],
       };
 
       setMessages(prev => [...prev, botResponse]);
@@ -102,7 +103,7 @@ function PublicChatbotPage() {
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'Entschuldigung, es gab einen Fehler bei der Verarbeitung Ihrer Nachricht.',
+        content: `Entschuldigung, es gab einen Fehler bei der Verarbeitung Ihrer Nachricht. ${err.message.includes('Failed to fetch') ? 'Das Backend ist nicht erreichbar.' : err.message}`,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
