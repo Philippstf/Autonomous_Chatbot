@@ -1252,39 +1252,34 @@ async def chat_with_public_bot(public_id: str, message: ChatMessage, request: Re
         bot_id = registry_doc.id
         logger.info(f"🔄 Resolved public_id {public_id} to bot_id: {bot_id}")
         
-        # Find chatbot config and initialize RAG system
-        logger.info(f"🔍 Looking for chatbot config with id: {bot_id}")
-        all_configs = firestore_storage.db.collection(
-            firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
-        ).where('id', '==', bot_id).limit(1).stream()
+        # Use the same approach as private chat - initialize RAG system directly
+        logger.info(f"🔍 Initializing RAG system for bot_id: {bot_id}")
         
-        config_doc = None
-        config_count = 0
-        for doc in all_configs:
-            config_doc = doc
-            config_count += 1
-            logger.info(f"📋 Found config doc with id: {doc.id}, data: {doc.to_dict().get('id', 'NO_ID')}")
-            break
+        # Initialize RAG system with actual bot_id (same as private chat)
+        rag_system = CloudMultiSourceRAG(chatbot_id=bot_id, use_cloud_storage=True)
         
-        logger.info(f"📊 Total configs found: {config_count}")
-        
-        if not config_doc:
-            # Let's try to find ANY config and see what IDs exist
-            logger.info(f"🔍 No config found for {bot_id}, checking all configs...")
-            all_configs_debug = firestore_storage.db.collection(
+        # Try to load RAG system (same logic as private chat)
+        try:
+            rag_system.load_rag_system()
+            logger.info(f"✅ Successfully loaded RAG system for bot {bot_id}")
+        except Exception as load_error:
+            logger.warning(f"⚠️ RAG system not found for {bot_id}, trying on-demand initialization... Error: {load_error}")
+            
+            # Check if we have chatbot config in Firestore (same as private chat)
+            all_configs = firestore_storage.db.collection(
                 firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
-            ).limit(5).stream()
+            ).where('id', '==', bot_id).stream()
             
-            for doc in all_configs_debug:
-                logger.info(f"📋 Available config: doc_id={doc.id}, id_field={doc.to_dict().get('id', 'NO_ID')}")
+            config_doc = None
+            for doc in all_configs:
+                config_doc = doc
+                break
             
-            raise HTTPException(status_code=404, detail=f"Bot config not found for id: {bot_id}")
-        
-        config_data = config_doc.to_dict()
-        owner_user_id = config_data['user_id']
-        
-        # Initialize RAG system with actual bot_id
-        rag_system = CloudMultiSourceRAG(bot_id, use_cloud_storage=True)
+            if not config_doc:
+                raise HTTPException(status_code=404, detail=f"Chatbot not found and on-demand initialization failed. Bot ID: {bot_id}")
+            
+            # On-demand initialization would go here if needed
+            raise HTTPException(status_code=404, detail=f"Chatbot not found and on-demand initialization failed. Bot ID: {bot_id}")
         
         # Generate conversation ID if not provided
         conversation_id = message.conversation_id or str(uuid.uuid4())
