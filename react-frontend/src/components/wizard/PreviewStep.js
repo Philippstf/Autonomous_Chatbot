@@ -20,7 +20,7 @@ import {
   Rocket as RocketIcon,
 } from '@mui/icons-material';
 
-function PreviewStep({ formData, onCreateChatbot }) {
+function PreviewStep({ formData, onSubmit, isCreating }) {
   // Validation checks
   const validationResults = [
     {
@@ -78,10 +78,10 @@ function PreviewStep({ formData, onCreateChatbot }) {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{ color: '#374151', fontWeight: 600 }}>
         🚀 Vorschau & Deployment
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="body1" sx={{ mb: 3, color: '#6b7280' }}>
         Überprüfen Sie Ihre Konfiguration und erstellen Sie Ihren Chatbot
       </Typography>
 
@@ -242,21 +242,21 @@ function PreviewStep({ formData, onCreateChatbot }) {
                 variant="contained"
                 size="large"
                 startIcon={<RocketIcon />}
-                onClick={onCreateChatbot}
-                disabled={!canCreate}
+                onClick={onSubmit}
+                disabled={!canCreate || isCreating}
                 sx={{
                   py: 1.5,
                   px: 4,
                   fontSize: '1.1rem',
                   background: canCreate 
-                    ? 'linear-gradient(135deg, #1f3a93, #34495e)' 
+                    ? 'linear-gradient(45deg, #1e3a8a, #3b82f6)' 
                     : undefined,
                   '&:hover': canCreate ? {
-                    background: 'linear-gradient(135deg, #4a69bd, #5a6c7d)',
+                    background: 'linear-gradient(45deg, #1e40af, #2563eb)',
                   } : undefined,
                 }}
               >
-                Chatbot jetzt erstellen
+                {isCreating ? 'Chatbot wird erstellt...' : 'Chatbot jetzt erstellen'}
               </Button>
 
               {!canCreate && (

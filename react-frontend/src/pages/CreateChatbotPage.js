@@ -358,7 +358,13 @@ function CreateChatbotPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', mb: 4 }}>
+          <Paper sx={{ 
+            p: 3, 
+            borderRadius: 3, 
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)', 
+            mb: 4,
+            backgroundColor: '#ffffff'
+          }}>
             <Stepper activeStep={activeStep} alternativeLabel>
               {wizardSteps.map((step, index) => (
                 <Step key={step.id} completed={completedSteps.has(index)}>
@@ -384,7 +390,13 @@ function CreateChatbotPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Paper sx={{ p: 4, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', minHeight: 500 }}>
+          <Paper sx={{ 
+            p: 4, 
+            borderRadius: 3, 
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)', 
+            minHeight: 500,
+            backgroundColor: '#ffffff'
+          }}>
             {/* Step Header */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="h4" sx={{ 
