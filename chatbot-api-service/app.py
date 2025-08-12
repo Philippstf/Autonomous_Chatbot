@@ -133,36 +133,69 @@ class PersistentBotService:
     async def load_from_firebase(self, bot_id: str) -> Optional[Dict]:
         """Lädt Bot-Config und RAG-System aus Firebase"""
         try:
-            # 1. Lade Bot-Config aus Firestore (globale Suche)
-            all_configs = self.firestore_storage.db.collection(
-                self.firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
-            ).where('id', '==', bot_id).stream()
-            
+            # 1. Lade Bot-Config aus Firestore (globale Suche - beide Collections)
             config_doc = None
-            for doc in all_configs:
+            
+            # Erste Suche: chatbot_registry (neue Frontend-Collection)
+            registry_configs = self.firestore_storage.db.collection('chatbot_registry').where('railwayBotId', '==', bot_id).stream()
+            for doc in registry_configs:
                 config_doc = doc
+                logger.info(f"🔍 Found bot {bot_id} in chatbot_registry by 'railwayBotId'")
                 break
                 
+            # Zweite Suche: chatbot_registry mit config.id (alte Struktur in registry)
             if not config_doc:
-                logger.warning(f"⚠️ No config found for bot {bot_id}")
+                registry_configs_old = self.firestore_storage.db.collection('chatbot_registry').where('config.id', '==', bot_id).stream()
+                for doc in registry_configs_old:
+                    config_doc = doc
+                    logger.info(f"🔍 Found bot {bot_id} in chatbot_registry by 'config.id'")
+                    break
+                    
+            # Dritte Suche: chatbot_configs (alte Backend-Collection als Fallback)
+            if not config_doc:
+                old_configs = self.firestore_storage.db.collection(
+                    self.firestore_storage.COLLECTIONS['CHATBOT_CONFIGS']
+                ).where('id', '==', bot_id).stream()
+                for doc in old_configs:
+                    config_doc = doc
+                    logger.info(f"🔍 Found bot {bot_id} in chatbot_configs by 'id' (legacy)")
+                    break
+                
+            if not config_doc:
+                logger.warning(f"⚠️ No config found for bot {bot_id} (searched chatbot_registry and chatbot_configs)")
                 return None
                 
             config_data = config_doc.to_dict()
+            logger.info(f"🔍 Raw config data structure: {list(config_data.keys())}")
             
             # Status prüfen
             if config_data.get('status') != 'active':
                 logger.warning(f"⚠️ Bot {bot_id} is not active (status: {config_data.get('status')})")
                 return None
             
-            # 2. Erstelle ChatbotConfig Objekt
-            chatbot_config = ChatbotConfig(
-                id=config_data['id'],
-                name=config_data['name'],
-                description=config_data.get('description', ''),
-                branding=config_data.get('branding', {}),
-                website_url=config_data.get('website_url'),
-                extended_config=config_data.get('extended_config', {})
-            )
+            # 2. Erstelle ChatbotConfig Objekt - handle both structures
+            # chatbot_registry has nested config, chatbot_configs is flat
+            if 'config' in config_data:
+                # New chatbot_registry structure
+                nested_config = config_data['config']
+                chatbot_config = ChatbotConfig(
+                    id=nested_config.get('id', bot_id),
+                    name=nested_config.get('name', 'Unknown Bot'),
+                    description=nested_config.get('description', ''),
+                    branding=config_data.get('branding', {}),
+                    website_url=nested_config.get('website_url'),
+                    extended_config=config_data.get('extended_config', {})
+                )
+            else:
+                # Old chatbot_configs structure (flat)
+                chatbot_config = ChatbotConfig(
+                    id=config_data.get('id', bot_id),
+                    name=config_data.get('name', 'Unknown Bot'),
+                    description=config_data.get('description', ''),
+                    branding=config_data.get('branding', {}),
+                    website_url=config_data.get('website_url'),
+                    extended_config=config_data.get('extended_config', {})
+                )
             
             # 3. Lade RAG-System aus Firebase Storage
             logger.info(f"🔄 Loading RAG system for {bot_id}...")
@@ -206,19 +239,20 @@ class PersistentBotService:
             return None
             
         config = bot['config']
+        branding = config.branding if hasattr(config, 'branding') else {}
         return {
             'id': config.id,
             'name': config.name,
             'description': config.description,
             'branding': {
-                'primary_color': config.branding.get('primary_color', '#1e3a8a'),
-                'secondary_color': config.branding.get('secondary_color', '#34495e'),
-                'logo_url': config.branding.get('logo_url'),
-                'welcome_message': config.branding.get('welcome_message', f"Hallo! Ich bin {config.name}")
+                'primary_color': branding.get('primary_color', '#1e3a8a'),
+                'secondary_color': branding.get('secondary_color', '#34495e'),
+                'logo_url': branding.get('logo_url'),
+                'welcome_message': branding.get('welcome_message', f"Hallo! Ich bin {config.name}")
             },
             'features': {
-                'email_capture': config.branding.get('email_capture_enabled', False),
-                'contact_persons': config.branding.get('contact_persons_enabled', False)
+                'email_capture': branding.get('email_capture_enabled', False),
+                'contact_persons': branding.get('contact_persons_enabled', False)
             },
             'status': bot['status'],
             'last_active': bot['loaded_at']

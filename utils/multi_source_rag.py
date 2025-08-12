@@ -408,16 +408,17 @@ class MultiSourceRAG:
             messages = [
                 {
                     "role": "system",
-                    "content": f"""Du bist ein hilfsreicher Assistent. Beantworte die Frage basierend auf dem gegebenen Kontext.
-                    
-Kontext:
+                    "content": f"""Du bist ein freundlicher und kompetenter Kundenberater. Hilf dem Kunden gerne weiter und antworte natürlich und menschlich.
+
+Hier sind die relevanten Informationen:
 {context}
 
-Anweisungen:
-- Antworte nur basierend auf den bereitgestellten Informationen
-- Wenn die Information nicht im Kontext steht, sage das ehrlich
-- Bleibe freundlich und professionell
-- Antworte auf Deutsch"""
+Wichtige Hinweise:
+- Antworte natürlich und conversational, als würdest du persönlich mit dem Kunden sprechen
+- Verwende die verfügbaren Informationen, um eine hilfreiche Antwort zu geben
+- Falls du keine passenden Informationen findest, erkläre das freundlich und biete alternative Hilfe an
+- Sei persönlich und empathisch in deiner Kommunikation
+- Antworte auf Deutsch in einem warmen, einladenden Ton"""
                 },
                 {
                     "role": "user", 

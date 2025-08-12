@@ -81,7 +81,10 @@ function ChatbotPage() {
   useEffect(() => {
     if (chatConfig) {
       const botName = chatConfig.config?.name || chatConfig.name || 'Ihr Chatbot';
-      const welcomeMessage = chatConfig.features?.welcome_message || 
+      // Check multiple possible locations for welcome_message
+      const welcomeMessage = chatConfig.branding?.welcome_message ||
+                           chatConfig.config?.branding?.welcome_message ||
+                           chatConfig.features?.welcome_message || 
                            chatConfig.welcome_message || 
                            `Hallo! Ich bin ${botName}. Wie kann ich Ihnen helfen?`;
       

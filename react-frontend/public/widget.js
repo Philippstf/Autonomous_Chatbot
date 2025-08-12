@@ -47,6 +47,7 @@
                 const response = await fetch(`${this.apiUrl}/v1/public/bot/${this.botId}`);
                 if (!response.ok) throw new Error('Bot not found');
                 this.botConfig = await response.json();
+                console.log('🔍 Helferlain Widget - Loaded config:', this.botConfig);
             } catch (error) {
                 console.error('Helferlain Widget: Failed to load bot config:', error);
                 this.botConfig = {
@@ -360,7 +361,10 @@
             welcomeMessage.className = 'helferlain-message assistant';
             
             const botName = this.botConfig?.name || 'Chatbot';
-            const welcomeText = `Hallo! 👋 Wie kann ich Ihnen helfen?`;
+            // Use welcome_message from bot config if available, otherwise use default
+            const welcomeText = this.botConfig?.branding?.welcome_message || 
+                              this.botConfig?.welcome_message ||
+                              `Hallo! 👋 Ich bin ${botName}. Wie kann ich Ihnen helfen?`;
             
             const bubble = document.createElement('div');
             bubble.className = 'helferlain-message-bubble';

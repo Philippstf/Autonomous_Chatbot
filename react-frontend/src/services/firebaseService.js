@@ -113,13 +113,29 @@ export const chatbotRegistryService = {
   },
 
   async generatePublicId(chatbotId) {
-    const chatbot = await this.getChatbot(chatbotId);
+    // First try to get by document ID (old format)
+    let chatbot = await this.getChatbot(chatbotId);
+    
+    // If not found, search by railwayBotId (new hybrid format)
+    if (!chatbot) {
+      const q = query(
+        collection(db, COLLECTIONS.CHATBOT_REGISTRY),
+        where('railwayBotId', '==', chatbotId)
+      );
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        chatbot = { id: doc.id, ...doc.data() };
+      }
+    }
+    
     if (!chatbot) throw new Error('Chatbot not found');
     
     // Generate unique public ID if not exists
     if (!chatbot.publicId) {
       const publicId = Math.random().toString(36).substring(2, 10);
-      await this.updateChatbot(chatbotId, { publicId });
+      // Use the Firebase document ID for update, not the railway ID
+      await this.updateChatbot(chatbot.id, { publicId });
       return publicId;
     }
     return chatbot.publicId;
@@ -136,7 +152,22 @@ export const chatbotRegistryService = {
   },
 
   async generateApiKey(chatbotId) {
-    const chatbot = await this.getChatbot(chatbotId);
+    // First try to get by document ID (old format)
+    let chatbot = await this.getChatbot(chatbotId);
+    
+    // If not found, search by railwayBotId (new hybrid format)
+    if (!chatbot) {
+      const q = query(
+        collection(db, COLLECTIONS.CHATBOT_REGISTRY),
+        where('railwayBotId', '==', chatbotId)
+      );
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        chatbot = { id: doc.id, ...doc.data() };
+      }
+    }
+    
     if (!chatbot) throw new Error('Chatbot not found');
     
     // Generate new API key
@@ -144,7 +175,8 @@ export const chatbotRegistryService = {
     const apiKeys = chatbot.apiKeys || [];
     apiKeys.push(apiKey);
     
-    await this.updateChatbot(chatbotId, { apiKeys });
+    // Use the Firebase document ID for update, not the railway ID
+    await this.updateChatbot(chatbot.id, { apiKeys });
     return apiKey;
   },
 
@@ -159,11 +191,27 @@ export const chatbotRegistryService = {
   },
 
   async removeApiKey(chatbotId, apiKey) {
-    const chatbot = await this.getChatbot(chatbotId);
+    // First try to get by document ID (old format)
+    let chatbot = await this.getChatbot(chatbotId);
+    
+    // If not found, search by railwayBotId (new hybrid format)
+    if (!chatbot) {
+      const q = query(
+        collection(db, COLLECTIONS.CHATBOT_REGISTRY),
+        where('railwayBotId', '==', chatbotId)
+      );
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        chatbot = { id: doc.id, ...doc.data() };
+      }
+    }
+    
     if (!chatbot) throw new Error('Chatbot not found');
     
     const apiKeys = (chatbot.apiKeys || []).filter(key => key !== apiKey);
-    await this.updateChatbot(chatbotId, { apiKeys });
+    // Use the Firebase document ID for update, not the railway ID
+    await this.updateChatbot(chatbot.id, { apiKeys });
   }
 };
 
